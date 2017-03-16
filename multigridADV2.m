@@ -4,7 +4,7 @@ close all;
 
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 100,  1, 1);
+[nx,ny,nz] = deal( 10,  1, 1);
 [Dx,Dy,Dz] = deal(200, 1, 1);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
@@ -87,14 +87,14 @@ while t < totTime
   % Newton loop
   % [p_ad,sW_ad,res,nit] = newtonAD(p_ad,sW_ad,tol,maxits,rhoW,rhoO,grad,gradz,pv,krW,krO,muW,muO,T,g,avg,upw,dt,div,injIndex,inRate,rhoWS,prodIndex,pIx,sIx);
    
-    subplot(2, 1, 1)
-    plot(model.G.cells.indexMap,p_ad.val);
-    title('Pressure')
-    subplot(2, 1, 2)
-    plot(model.G.cells.indexMap,sW_ad.val);
-    caxis([0, 1])
-    title('Watersaturation')
-    drawnow
+%     subplot(2, 1, 1)
+%     plot(model.G.cells.indexMap,p_ad.val);
+%     title('Pressure')
+%     subplot(2, 1, 2)
+%     plot(model.G.cells.indexMap,sW_ad.val);
+%     caxis([0, 1])
+%     title('Watersaturation')
+%     drawnow
    if nit > maxits
       error('Newton solves did not converge')
    else % store solution

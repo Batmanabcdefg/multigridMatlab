@@ -1,4 +1,4 @@
-function [model_coarse,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_coarse, ...
+function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_coarse, ...
     pIx_coarse, sIx_coarse,p_ad_0_coarse, sW_ad_0_coarse] ...
     = coarseningV2(model, p_ad, sW_ad,defect,pIx,sIx,p_ad_0,sW_ad_0)
   %% Function description
@@ -44,17 +44,19 @@ function [model_coarse,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_
   %coarse = true;
   %model_coarse = initiateModel(CG, rock_coarse, coarse); 
   %}
-  model_coarse = initiateModel(CG, rock_coarse);
+  coarse_model = initiateModel(CG, rock_coarse);
 
   % Add fields to the coarse grid to ensure that it passes as a
   % regular grid for our purposes.
-  model_coarse.G.cartDims = coarse_dims;
+  coarse_model.G.cartDims = coarse_dims;
   
   %% Restrict AD variables and defect
   weighting = accumarray(partition,1);
   
   coarse_p_init = accumarray(partition, p_ad.val)./weighting;
-  coarse_sW_init = accumarray(partition,sW_ad.val)./weighting;
+  %NB! No weighting of saturation(?) Plotting of saturation suggests no
+  %weighting
+  coarse_sW_init = accumarray(partition,sW_ad.val);%./weighting;
   % Until a better aproach is found, the ADI varaables is re-initiated 
   [p_ad_coarse, sW_ad_coarse] = initVariablesADI(coarse_p_init, coarse_sW_init);
 
@@ -67,7 +69,7 @@ function [model_coarse,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_
   [defect_p_ad_coarse, defect_s_ad_coarse]= initVariablesADI(accumarray(partition,defect(pIx)),accumarray(partition,defect(sIx))); 
 
   %% Coarsen help variables
-  nc_coarse = model_coarse.G.cells.num;
+  nc_coarse = coarse_model.G.cells.num;
   pIx_coarse = 1:nc_coarse;
   sIx_coarse = (nc_coarse+1):(2*nc_coarse);
   
