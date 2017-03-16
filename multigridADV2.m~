@@ -2,17 +2,10 @@ mrstModule add coarsegrid;
 
 close all;
 
-%% Multigrid variables
-% Presmoothing steps
-v1_iter = 1;
-% Postsmoothing steps
-v2_iter = 1;
-
-
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 10,  10, 10);
-[Dx,Dy,Dz] = deal(200, 200, 50);
+[nx,ny,nz] = deal( 10,  1, 1);
+[Dx,Dy,Dz] = deal(200, 1, 1);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
 
@@ -28,7 +21,7 @@ model = initiateModel(grid, rock);
 
 p = linspace(100*barsa,220*barsa,50)';
 s = linspace(0,1,50)';
-plot(p/barsa, pv_r(1).*exp(cr*(p-p_r)),'LineWidth',2);
+plot(p/barsa, model.rock.pv_r(1).*exp(model.rock.cr*(p-model.rock.p_r)),'LineWidth',2);
 
 
 %% Plot model for two-phase compressible fluid
@@ -62,15 +55,22 @@ numSteps = 100;                  % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
 tol      = 1e-5;                % Newton tolerance
-maxits   = 15;                  % max number of Newton its
+maxits   = 30;                  % max number of Newton its
+
+% Multigrid variables
+% Presmoothing steps
+v1_iter = 1;
+% Postsmoothing steps
+v2_iter = 5;
+
 
 model.well.inRate = 1*sum(model.rock.pv(p_init))/totTime;
-model.well.outRate = 0.5*inRate;
+model.well.outRate = 0.5*model.well.inRate;
 
 sol = repmat(struct('time',[],'pressure',[], 's', []),[numSteps+1,1]);
 sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
     's', double(sW_ad));
-
+figure(2)
 %% Main loop
 t = 0; step = 0;
 hwb = waitbar(t,'Simulation ..');
@@ -86,7 +86,17 @@ while t < totTime
   
   % Newton loop
   % [p_ad,sW_ad,res,nit] = newtonAD(p_ad,sW_ad,tol,maxits,rhoW,rhoO,grad,gradz,pv,krW,krO,muW,muO,T,g,avg,upw,dt,div,injIndex,inRate,rhoWS,prodIndex,pIx,sIx);
-
+   
+    subplot(2, 1, 1)
+    plot(cellp_ad.val);
+    title('Pressure')
+    view(30, 40);
+    subplot(2, 1, 2)
+    plotCellData(sW_ad.val);
+    caxis([0, 1])
+    view(30, 40);
+    title('Watersaturation')
+    drawnow
    if nit > maxits
       error('Newton solves did not converge')
    else % store solution

@@ -1,7 +1,7 @@
 close all;
 %% Set up model geometry
-[nx,ny,nz] = deal( 10,  10, 10);
-[Dx,Dy,Dz] = deal(200, 200, 50);
+[nx,ny,nz] = deal( 10,  1, 1);
+[Dx,Dy,Dz] = deal(200, 1, 1);
 G = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 G = computeGeometry(G);
 

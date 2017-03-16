@@ -2,17 +2,10 @@ mrstModule add coarsegrid;
 
 close all;
 
-%% Multigrid variables
-% Presmoothing steps
-v1_iter = 1;
-% Postsmoothing steps
-v2_iter = 1;
-
-
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 10,  10, 10);
-[Dx,Dy,Dz] = deal(200, 200, 50);
+[nx,ny,nz] = deal( 100,  1, 1);
+[Dx,Dy,Dz] = deal(200, 1, 1);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
 
@@ -62,7 +55,14 @@ numSteps = 100;                  % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
 tol      = 1e-5;                % Newton tolerance
-maxits   = 20;                  % max number of Newton its
+maxits   = 30;                  % max number of Newton its
+
+% Multigrid variables
+% Presmoothing steps
+v1_iter = 1;
+% Postsmoothing steps
+v2_iter = 5;
+
 
 model.well.inRate = 1*sum(model.rock.pv(p_init))/totTime;
 model.well.outRate = 0.5*model.well.inRate;
@@ -70,7 +70,7 @@ model.well.outRate = 0.5*model.well.inRate;
 sol = repmat(struct('time',[],'pressure',[], 's', []),[numSteps+1,1]);
 sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
     's', double(sW_ad));
-
+figure(3)
 %% Main loop
 t = 0; step = 0;
 hwb = waitbar(t,'Simulation ..');
@@ -86,7 +86,15 @@ while t < totTime
   
   % Newton loop
   % [p_ad,sW_ad,res,nit] = newtonAD(p_ad,sW_ad,tol,maxits,rhoW,rhoO,grad,gradz,pv,krW,krO,muW,muO,T,g,avg,upw,dt,div,injIndex,inRate,rhoWS,prodIndex,pIx,sIx);
-
+   
+    subplot(2, 1, 1)
+    plot(model.G.cells.indexMap,p_ad.val);
+    title('Pressure')
+    subplot(2, 1, 2)
+    plot(model.G.cells.indexMap,sW_ad.val);
+    caxis([0, 1])
+    title('Watersaturation')
+    drawnow
    if nit > maxits
       error('Newton solves did not converge')
    else % store solution
