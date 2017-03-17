@@ -81,7 +81,7 @@ while t < totTime
       step, convertTo(t - dt, day), convertTo(t, day));
 
   % Multigrid
-  [p_ad, sW_ad,nit] = multigridCycleV2(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt,pIx,sIx);
+  [p_ad, sW_ad,nit] = multigridCycleV2(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,t,dt,pIx,sIx);
 
   
   % Newton loop

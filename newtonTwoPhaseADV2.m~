@@ -1,8 +1,7 @@
 function [p_ad, sW_ad,res,nit] =  ...
-    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,pIx,sIx)
+    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,pIx,sIx,varargin)
    resNorm = 1e99;
    %% Function description
-   %Note:  This function is simply copyed out and slightly modified from the original file twoPhaseAD.m
    %
    % PARAMETERS:
    % model    - System model structure with grid, rock, phases and operator
@@ -18,12 +17,25 @@ function [p_ad, sW_ad,res,nit] =  ...
    % sIx      - Index array for saturation values
    %
    % RETURNS:
-   % p_ad     - Approximated values of tehstored in ADI structure
+   % p_ad     - Approximated values of the pressure stored in ADI structure
+   % s_ad     - Approximated values of the saturation stored in ADI structure
+   % res      - Residual from the final newton iteration
+   % nit      - Number of iterations performed
+   % 
+   % COMMENTS:
+   % - The body of this function is simply copyed out and slightly modified from the original file twoPhaseAD.m
+   %
+   % SEE ALSO:
+   %
 
 %% Body
-  
-   p0  = double(p_ad); % Previous step pressure
-   sW0 = double(sW_ad);
+   if(isempty(varargin))
+       p0  = double(p_ad); % Previous step pressure
+       sW0 = double(sW_ad);
+   else
+       p0 = double(varargin{1});
+       sW0 = double(varargin{2});
+   end
    nit = 0;
  
   while (resNorm > tol) && (nit < maxits)
@@ -52,7 +64,7 @@ function [p_ad, sW_ad,res,nit] =  ...
       % Conservation of water and oil
       water = (1/dt).*(vol.*rW.*sW_ad - vol0.*rW0.*sW0) + model.operator.div(vW);
       oil   = (1/dt).*(vol.*rO.*(1-sW_ad) - vol0.*rO0.*(1-sW0)) + model.operator.div(vO);
-      % Insert volumetric source term multiplied by density
+          % Insert volumetric source term multiplied by density
       water(model.well.injIndex) = water(model.well.injIndex) - model.well.inRate.*model.water.rhoWS;
       % Set production cells to fixed pressure of 200 bar and zero water
       water(model.well.prodIndex) = p_ad(model.well.prodIndex) - 200*barsa;
@@ -65,11 +77,13 @@ function [p_ad, sW_ad,res,nit] =  ...
       res = eq.val;     % residual
       upd = -(J \ res); % Newton update
       % Update variables
-      p_ad.val   = p_ad.val   + upd(pIx);
+      p_ad.val  = p_ad.val  + upd(pIx);
       sW_ad.val = sW_ad.val + upd(sIx);
       sW_ad.val = min(sW_ad.val, 1);
       sW_ad.val = max(sW_ad.val, 0);
-      
+    figure
+    plot(1:model.G.cells.num,p_ad.val);
+    title('Pressure')
       resNorm = norm(res);
       nit     = nit + 1;
       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);

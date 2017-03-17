@@ -1,5 +1,5 @@
 function [p_ad, sW_ad,res,nit] =  ...
-    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,pIx,sIx,varargin)
+    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,t,dt,pIx,sIx,varargin)
    resNorm = 1e99;
    %% Function description
    %
@@ -81,7 +81,9 @@ function [p_ad, sW_ad,res,nit] =  ...
       sW_ad.val = sW_ad.val + upd(sIx);
       sW_ad.val = min(sW_ad.val, 1);
       sW_ad.val = max(sW_ad.val, 0);
-      
+%     figure
+%     plot(1:model.G.cells.num,p_ad.val);
+%     title('Pressure')
       resNorm = norm(res);
       nit     = nit + 1;
       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);

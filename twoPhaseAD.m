@@ -135,7 +135,13 @@ while t < totTime
       % Insert volumetric source term multiplied by density
       water(injIndex) = water(injIndex) - inRate.*rhoWS;
       % Set production cells to fixed pressure of 200 bar and zero water
-      water(prodIndex) = p_ad(prodIndex) - 200*barsa;
+      if(t == dt)
+        water(prodIndex) = p_ad(prodIndex) - 200*barsa;
+      else
+          temp=  p_ad(prodIndex);
+          temp.val = 0;
+          water(prodIndex) = temp;
+      end
       oil(prodIndex) = sW_ad(prodIndex);
       % Collect all equations
       eqs = {oil, water};

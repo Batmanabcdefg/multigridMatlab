@@ -61,7 +61,8 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_
   [p_ad_coarse, sW_ad_coarse] = initVariablesADI(coarse_p_init, coarse_sW_init);
 
   coarse_p_0 = accumarray(partition, p_ad_0.val)./weighting;
-  coarse_sW_0 = accumarray(partition,sW_ad_0.val)./weighting;
+  coarse_sW_0 = accumarray(partition,sW_ad_0.val);%./weighting;
+  
   % Until a better aproach is found, the ADI varaables is re-initiated 
   [p_ad_0_coarse, sW_ad_0_coarse] = initVariablesADI(coarse_p_0, coarse_sW_0);
 
@@ -73,4 +74,9 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_
   pIx_coarse = 1:nc_coarse;
   sIx_coarse = (nc_coarse+1):(2*nc_coarse);
   
+  %Well conditions
+  
+  coarse_model.well.inRate = model.well.inRate;
+  coarse_model.well.outRate = model.well.outRate;
+
 end
