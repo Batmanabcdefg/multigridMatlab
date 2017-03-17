@@ -1,6 +1,6 @@
 function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_coarse, ...
-    pIx_coarse, sIx_coarse,p_ad_0_coarse, sW_ad_0_coarse] ...
-    = coarseningV2(model, p_ad, sW_ad,defect,pIx,sIx,p_ad_0,sW_ad_0)
+    p_ad_0_coarse, sW_ad_0_coarse] ...
+    = coarseningV2(model, p_ad, sW_ad,defect,p_ad_0,sW_ad_0)
   %% Function description
   %
   % PARAMETERS:
@@ -9,8 +9,6 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_
   % p_ad     - ADI struct for the pressure
   % s_ad     - ADI struct for the saturation
   % defect   - The defect of the current approximization.
-  % pIx      - Index array for pressure values
-  % sIx      - Index array for saturation values
   %
   % RETURNS:
   % p_ad_coarse - Coarsed version of the pressure eqs. with reinitialized
@@ -19,8 +17,6 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_
   %               ADI structure
   % defect_p_ad_coarse - Coarsed version of the pressure defect
   % defect_s_ad_coarse - Coarsed version of the saturation defect
-  % pIx_coarse   - Coarsed version of the pressure index
-  % sIx_coarse   - Coarsed version of the saturation index
   %
   % COMMENTS:
   % - This coarsening function is currently not optimized for performance
@@ -67,12 +63,7 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_
   [p_ad_0_coarse, sW_ad_0_coarse] = initVariablesADI(coarse_p_0, coarse_sW_0);
 
   % Prolongate defect - sum
-  [defect_p_ad_coarse, defect_s_ad_coarse]= initVariablesADI(accumarray(partition,defect(pIx)),accumarray(partition,defect(sIx))); 
-
-  %% Coarsen help variables
-  nc_coarse = coarse_model.G.cells.num;
-  pIx_coarse = 1:nc_coarse;
-  sIx_coarse = (nc_coarse+1):(2*nc_coarse);
+  [defect_p_ad_coarse, defect_s_ad_coarse]= initVariablesADI(accumarray(partition,defect(model.pIx)),accumarray(partition,defect(model.sIx))); 
   
   %Well conditions
   

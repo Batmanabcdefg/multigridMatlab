@@ -47,15 +47,12 @@ sW_init = zeros(model.G.cells.num, 1);
 
 %% Initialize for solution loop
 [p_ad, sW_ad] = initVariablesADI(p_init, sW_init);
-nc = model.G.cells.num;
-pIx = 1:nc;
-sIx = (nc+1):(2*nc);
 
 numSteps = 100;                  % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
 tol      = 1e-5;                % Newton tolerance
-maxits   = 30;                  % max number of Newton its
+maxits   = 50;                  % max number of Newton its
 
 % Multigrid variables
 % Presmoothing steps
@@ -81,7 +78,7 @@ while t < totTime
       step, convertTo(t - dt, day), convertTo(t, day));
 
   % Multigrid
-  [p_ad, sW_ad,nit] = multigridCycleV2(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,t,dt,pIx,sIx);
+  [p_ad, sW_ad,nit] = multigridCycleV2(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt);
 
   
   % Newton loop

@@ -25,7 +25,7 @@ function [model] = initiateModel(G,rock,varargin)
   %
 
   %% Rock model
- % rock = makeRock(G, 30*milli*darcy, 0.3);
+ %rock = makeRock(G, 30*milli*darcy, 0.3);
   cr   = 1e-6/barsa;
   p_r  = 200*barsa;
   pv_r = poreVolume(G, rock);
@@ -62,22 +62,11 @@ function [model] = initiateModel(G,rock,varargin)
   N  = double(G.faces.neighbors);
   intInx = all(N ~= 0, 2);
   N  = N(intInx, :);                          % Interior neighbors
-  
-%   if(isempty(varargin)==0)
-%       coarse = varargin{1};
-%   else
-%       coarse = 0;
-%   end
-%   if(coarse == true)
-%      T =  computeTrans(G, rock);
-%      T = T(intInx);
-%   else
-    hT = computeTrans(G, rock);                 % Half-transmissibilities
-    cf = G.cells.faces(:,1);
-    nf = G.faces.num;
-    T  = 1 ./ accumarray(cf, 1 ./ hT, [nf, 1]); % Harmonic average
-    T  = T(intInx);                             % Restricted to interior
-%  end
+  hT = computeTrans(G, rock);                 % Half-transmissibilities
+  cf = G.cells.faces(:,1);
+  nf = G.faces.num;
+  T  = 1 ./ accumarray(cf, 1 ./ hT, [nf, 1]); % Harmonic average
+  T  = T(intInx);                             % Restricted to interior
   
   %% Define discrete operators
   n = size(N,1);
@@ -100,8 +89,17 @@ function [model] = initiateModel(G,rock,varargin)
   
   well = struct('injIndex',injIndex, 'prodIndex',prodIndex, 'inRate', inRate, 'outRate', outRate);
   
+  %% Remaining variables
+  %Note: Write a better description
+  nc = G.cells.num;
+  pIx = 1:nc;
+  sIx = (nc+1):(2*nc);
+  p_ad = 0;
+  sW_ad = 0;
+  
+  
   %% Place all model parts and help function i a "modelstruct"
   model = struct('G',G,'rock', rock, 'water', water, 'oil',oil, 'T', T, ...
-      'operator', operator, 'well', well);
+      'operator', operator, 'well', well, 'pIx', pIx,'sIx',sIx,'p_ad',p_ad,'sW_ad',sW_ad);
 
 end

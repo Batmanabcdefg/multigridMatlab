@@ -1,5 +1,5 @@
 function [p_approx, sW_approx,nit] ...
-    = multigridCycleV2(v1,v2,model,p_ad_0,sW_ad_0,tol,maxits,g,t,dt,pIx,sIx);
+    = multigridCycleV2(v1,v2,model,p_ad_0,sW_ad_0,tol,maxits,g,dt);
   %% Function description
   %
   % PARAMETERS:
@@ -15,8 +15,6 @@ function [p_approx, sW_approx,nit] ...
   %            coarsed grid
   % g        - gravity constant 
   % dt       - current time step
-  % pIx      - Index array for pressure values
-  % sIx      - Index array for saturation values
   %
   % RETURNS:
   % p_ad     - Approximated values of the pressure stored in ADI structure
@@ -29,17 +27,17 @@ function [p_approx, sW_approx,nit] ...
   %
 
   %% Presmoothing
-  [p_ad,sW_ad,defect] = newtonTwoPhaseADV2(model,p_ad_0,sW_ad_0,tol,v1,g,t,dt,pIx,sIx);
+  [p_ad,sW_ad,defect] = newtonTwoPhaseADV2(model,p_ad_0,sW_ad_0,tol,v1,g,dt);
  
  
   %% Set up of coarse grid
   [coarse_model,coarse_p_ad, coarse_sW_ad,coarse_defect_p_ad,coarse_defect_sW_ad, ...
-    pIx_coarse, sIx_coarse,coarse_p_ad_0, coarse_sW_ad_0] ...
-   = coarseningV2(model, p_ad, sW_ad, defect,pIx,sIx,p_ad_0,sW_ad_0);
+      coarse_p_ad_0, coarse_sW_ad_0] ...
+   = coarseningV2(model, p_ad, sW_ad, defect,p_ad_0,sW_ad_0);
     
   %% Multigrid core
   [correction_p,correction_sW,nit] ...
-      = newtonTwoPhaseADV2(coarse_model,coarse_p_ad,coarse_sW_ad,tol,maxits,g,t,dt,pIx_coarse,sIx_coarse,coarse_p_ad_0, coarse_sW_ad_0);
+      = newtonTwoPhaseADV2(coarse_model,coarse_p_ad,coarse_sW_ad,tol,maxits,g,dt,coarse_p_ad_0, coarse_sW_ad_0);
 
 %     figure
 %     subplot(6, 2, 1); plot(model.G.cells.indexMap,p_ad.val);
@@ -61,9 +59,9 @@ function [p_approx, sW_approx,nit] ...
 
 [fine_correction_p, fine_correction_sW] = interpolate(coarse_model.G, correction_p, correction_sW);
   
- % p_ad.val = p_ad.val + fine_correction_p;
+  p_ad.val = p_ad.val + fine_correction_p;
   
- % sW_ad.val = sW_ad.val + fine_correction_sW;
+  sW_ad.val = sW_ad.val + fine_correction_sW;
 %   
 % figure(5)
 % subplot(2,1,1)
@@ -75,6 +73,6 @@ function [p_approx, sW_approx,nit] ...
 % title('Coarse-scale solution')
 
   % Postsmoothing
-  [p_approx,sW_approx,nit] = newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,v2,g,t,dt,pIx,sIx);
+  [p_approx,sW_approx,nit] = newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,v2,g,dt);
   
 end

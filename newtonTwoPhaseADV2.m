@@ -1,5 +1,5 @@
 function [p_ad, sW_ad,res,nit] =  ...
-    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,t,dt,pIx,sIx,varargin)
+    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,varargin)
    resNorm = 1e99;
    %% Function description
    %
@@ -13,8 +13,6 @@ function [p_ad, sW_ad,res,nit] =  ...
    % maxits   - The maximum number of newton iterations perfomed
    % g        - gravity constant 
    % dt       - current time step
-   % pIx      - Index array for pressure values
-   % sIx      - Index array for saturation values
    %
    % RETURNS:
    % p_ad     - Approximated values of the pressure stored in ADI structure
@@ -77,8 +75,8 @@ function [p_ad, sW_ad,res,nit] =  ...
       res = eq.val;     % residual
       upd = -(J \ res); % Newton update
       % Update variables
-      p_ad.val  = p_ad.val  + upd(pIx);
-      sW_ad.val = sW_ad.val + upd(sIx);
+      p_ad.val  = p_ad.val  + upd(model.pIx);
+      sW_ad.val = sW_ad.val + upd(model.sIx);
       sW_ad.val = min(sW_ad.val, 1);
       sW_ad.val = max(sW_ad.val, 0);
 %     figure
