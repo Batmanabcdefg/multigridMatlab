@@ -51,9 +51,9 @@ sW_init = zeros(model.G.cells.num, 1);
 numSteps = 100;                  % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
-tol      = 1e-5;                % Newton tolerance
-maxits   = 50;                  % max number of Newton its
-
+tol      = 1e-7;                % Newton tolerance
+maxits   = 20;                  % max number of Newton its
+display(maxits)
 % Multigrid variables
 % Presmoothing steps
 v1_iter = 1;
@@ -71,7 +71,7 @@ figure(3)
 %% Main loop
 t = 0; step = 0;
 hwb = waitbar(t,'Simulation ..');
-while t < totTime
+while t < dt*15
    t = t + dt;
    step = step + 1;
    fprintf('\nTime step %d: Time %.2f -> %.2f days\n', ...
@@ -80,18 +80,6 @@ while t < totTime
   % Multigrid
   [p_ad, sW_ad,nit] = multigridCycleV2(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt);
 
-  
-  % Newton loop
-  % [p_ad,sW_ad,res,nit] = newtonAD(p_ad,sW_ad,tol,maxits,rhoW,rhoO,grad,gradz,pv,krW,krO,muW,muO,T,g,avg,upw,dt,div,injIndex,inRate,rhoWS,prodIndex,pIx,sIx);
-   
-%     subplot(2, 1, 1)
-%     plot(model.G.cells.indexMap,p_ad.val);
-%     title('Pressure')
-%     subplot(2, 1, 2)
-%     plot(model.G.cells.indexMap,sW_ad.val);
-%     caxis([0, 1])
-%     title('Watersaturation')
-%     drawnow
    if nit > maxits
       error('Newton solves did not converge')
    else % store solution

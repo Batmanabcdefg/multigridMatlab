@@ -1,6 +1,5 @@
 function [p_ad, sW_ad,res,nit] =  ...
     newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,varargin)
-   resNorm = 1e99;
    %% Function description
    %
    % PARAMETERS:
@@ -35,8 +34,11 @@ function [p_ad, sW_ad,res,nit] =  ...
        sW0 = double(varargin{2});
    end
    nit = 0;
- 
-  while (resNorm > tol) && (nit < maxits)
+   resNorm = 1e99;
+   old_res = resNorm;
+   
+  while (resNorm > tol) && (nit < maxits) && (old_res >= resNorm)
+      old_res = resNorm;
       % Evaluate properties
       rW = model.water.rhoW(p_ad);
       rW0 = model.water.rhoW(p0);

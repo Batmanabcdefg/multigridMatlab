@@ -1,6 +1,5 @@
 function [p_ad, sW_ad,res,nit] =  ...
-    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,pIx,sIx,varargin)
-   resNorm = 1e99;
+    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,varargin)
    %% Function description
    %
    % PARAMETERS:
@@ -13,8 +12,6 @@ function [p_ad, sW_ad,res,nit] =  ...
    % maxits   - The maximum number of newton iterations perfomed
    % g        - gravity constant 
    % dt       - current time step
-   % pIx      - Index array for pressure values
-   % sIx      - Index array for saturation values
    %
    % RETURNS:
    % p_ad     - Approximated values of the pressure stored in ADI structure
@@ -37,8 +34,10 @@ function [p_ad, sW_ad,res,nit] =  ...
        sW0 = double(varargin{2});
    end
    nit = 0;
- 
-  while (resNorm > tol) && (nit < maxits)
+   resNorm = 1e99;
+   old_res = resNorm;
+   
+  while (resNorm > tol) && (nit < maxits) && ()
       % Evaluate properties
       rW = model.water.rhoW(p_ad);
       rW0 = model.water.rhoW(p0);
@@ -64,7 +63,7 @@ function [p_ad, sW_ad,res,nit] =  ...
       % Conservation of water and oil
       water = (1/dt).*(vol.*rW.*sW_ad - vol0.*rW0.*sW0) + model.operator.div(vW);
       oil   = (1/dt).*(vol.*rO.*(1-sW_ad) - vol0.*rO0.*(1-sW0)) + model.operator.div(vO);
-          % Insert volumetric source term multiplied by density
+      % Insert volumetric source term multiplied by density
       water(model.well.injIndex) = water(model.well.injIndex) - model.well.inRate.*model.water.rhoWS;
       % Set production cells to fixed pressure of 200 bar and zero water
       water(model.well.prodIndex) = p_ad(model.well.prodIndex) - 200*barsa;
@@ -77,13 +76,13 @@ function [p_ad, sW_ad,res,nit] =  ...
       res = eq.val;     % residual
       upd = -(J \ res); % Newton update
       % Update variables
-      p_ad.val  = p_ad.val  + upd(pIx);
-      sW_ad.val = sW_ad.val + upd(sIx);
+      p_ad.val  = p_ad.val  + upd(model.pIx);
+      sW_ad.val = sW_ad.val + upd(model.sIx);
       sW_ad.val = min(sW_ad.val, 1);
       sW_ad.val = max(sW_ad.val, 0);
-    figure
-    plot(1:model.G.cells.num,p_ad.val);
-    title('Pressure')
+%     figure
+%     plot(1:model.G.cells.num,p_ad.val);
+%     title('Pressure')
       resNorm = norm(res);
       nit     = nit + 1;
       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);

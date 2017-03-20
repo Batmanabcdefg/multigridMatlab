@@ -28,7 +28,8 @@ function [p_approx, sW_approx,nit] ...
 
   %% Presmoothing
   [p_ad,sW_ad,defect] = newtonTwoPhaseADV2(model,p_ad_0,sW_ad_0,tol,v1,g,dt);
- 
+ p_ad = p_ad_0;
+ sW_ad = sW_ad_0;
  
   %% Set up of coarse grid
   [coarse_model,coarse_p_ad, coarse_sW_ad,coarse_defect_p_ad,coarse_defect_sW_ad, ...
@@ -39,30 +40,32 @@ function [p_approx, sW_approx,nit] ...
   [correction_p,correction_sW,nit] ...
       = newtonTwoPhaseADV2(coarse_model,coarse_p_ad,coarse_sW_ad,tol,maxits,g,dt,coarse_p_ad_0, coarse_sW_ad_0);
 
-%     figure
-%     subplot(6, 2, 1); plot(model.G.cells.indexMap,p_ad.val);
-%     title('Pressure')
-%     subplot(6, 2, 3); plot(1:coarse_model.G.cells.num,coarse_p_ad.val);
-%     title('Coarse Pressure')
-%     subplot(6, 2, 5); plot(1:coarse_model.G.cells.num,correction_p);
-%     title('Corrected coarse Pressure')
-%     
-%     subplot(6, 2, 2); plot(model.G.cells.indexMap,sW_ad.val);
-%     title('Saturation')
-%     subplot(6, 2, 4); plot(1:coarse_model.G.cells.num,coarse_sW_ad.val);
-%     title('Coarse Saturation')
-%     subplot(6, 2, 6); plot(1:coarse_model.G.cells.num,correction_sW);
-%     title('Corrected coarse Saturation')
-%     drawnow
+    figure
+    subplot(6, 2, 1); plot(model.G.cells.indexMap,p_ad.val);
+    title('Pressure')
+    subplot(6, 2, 3); plot(1:coarse_model.G.cells.num,coarse_p_ad.val);
+    title('Coarse Pressure')
+    subplot(6, 2, 5); plot(1:coarse_model.G.cells.num,correction_p);
+    title('Corrected coarse Pressure')
+    
+    subplot(6, 2, 2); plot(model.G.cells.indexMap,sW_ad.val);
+    title('Saturation')
+    subplot(6, 2, 4); plot(1:coarse_model.G.cells.num,coarse_sW_ad.val);
+    title('Coarse Saturation')
+    subplot(6, 2, 6); plot(1:coarse_model.G.cells.num,correction_sW);
+    title('Corrected coarse Saturation')
+    drawnow
   
   %% Interpolating soluton from coarsed grid and compute ccorrected approximation
 
 [fine_correction_p, fine_correction_sW] = interpolate(coarse_model.G, correction_p, correction_sW);
   
-  p_ad.val = p_ad.val + fine_correction_p;
+  p_ad.val =   fine_correction_p;
+  sW_ad.val = fine_correction_sW;
   
-  sW_ad.val = sW_ad.val + fine_correction_sW;
-%   
+ % p_approx = p_ad;
+ % sW_approx = sW_ad;
+   
 % figure(5)
 % subplot(2,1,1)
 % plotCellData(model.G, p_ad.val,'EdgeColor','k','EdgeAlpha',.2)
