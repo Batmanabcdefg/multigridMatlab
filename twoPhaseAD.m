@@ -96,7 +96,7 @@ sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
 %% Main loop
 t = 0; step = 0;
 hwb = waitbar(t,'Simulation ..');
-while t < totTime
+while t < dt*3
    t = t + dt;
    step = step + 1;
    fprintf('\nTime step %d: Time %.2f -> %.2f days\n', ...
@@ -160,7 +160,7 @@ while t < totTime
       nit     = nit + 1;
       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
    end
-
+   p_ad.val
    if nit > maxits,
       error('Newton solves did not converge')
    else % store solution

@@ -39,42 +39,47 @@ function [p_approx, sW_approx,nit] ...
   %% Multigrid core
   [correction_p,correction_sW,nit] ...
       = newtonTwoPhaseADV2(coarse_model,coarse_p_ad,coarse_sW_ad,tol,maxits,g,dt,coarse_p_ad_0, coarse_sW_ad_0);
-
-    figure
-    subplot(6, 2, 1); plot(model.G.cells.indexMap,p_ad.val);
-    title('Pressure')
-    subplot(6, 2, 3); plot(1:coarse_model.G.cells.num,coarse_p_ad.val);
-    title('Coarse Pressure')
-    subplot(6, 2, 5); plot(1:coarse_model.G.cells.num,correction_p);
-    title('Corrected coarse Pressure')
-    
-    subplot(6, 2, 2); plot(model.G.cells.indexMap,sW_ad.val);
-    title('Saturation')
-    subplot(6, 2, 4); plot(1:coarse_model.G.cells.num,coarse_sW_ad.val);
-    title('Coarse Saturation')
-    subplot(6, 2, 6); plot(1:coarse_model.G.cells.num,correction_sW);
-    title('Corrected coarse Saturation')
-    drawnow
-  
+% 
+%     figure
+%     subplot(6, 2, 1); plot(model.G.cells.indexMap,p_ad.val);
+%     title('Pressure')
+%     subplot(6, 2, 3); plot(1:coarse_model.G.cells.num,coarse_p_ad.val);
+%     title('Coarse Pressure')
+%     subplot(6, 2, 5); plot(1:coarse_model.G.cells.num,correction_p);
+%     title('Corrected coarse Pressure')
+%     
+%     subplot(6, 2, 2); plot(model.G.cells.indexMap,sW_ad.val);
+%     title('Saturation')
+%     subplot(6, 2, 4); plot(1:coarse_model.G.cells.num,coarse_sW_ad.val);
+%     title('Coarse Saturation')
+%     subplot(6, 2, 6); plot(1:coarse_model.G.cells.num,correction_sW);
+%     title('Corrected coarse Saturation')
+%     drawnow
+%   
   %% Interpolating soluton from coarsed grid and compute ccorrected approximation
 
-[fine_correction_p, fine_correction_sW] = interpolate(coarse_model.G, correction_p, correction_sW);
-  
-  p_ad.val =   fine_correction_p;
-  sW_ad.val = fine_correction_sW;
-  
- % p_approx = p_ad;
- % sW_approx = sW_ad;
-   
-% figure(5)
-% subplot(2,1,1)
-% plotCellData(model.G, p_ad.val,'EdgeColor','k','EdgeAlpha',.2)
-% title('Fine-scale solution')
-% subplot(2,1,2)
-% plotCellData(coarse_model.G, correction_p,'EdgeColor','none')
-% %plotFaces(CG,(1:model_coarse.G.faces.num)','FaceColor','none');
-% title('Coarse-scale solution')
+[fine_correction_p, fine_correction_sW] = interpolate(coarse_model.G,  ...
+    correction_p - coarse_p_ad.val, correction_sW - coarse_sW_ad.val);
 
+  p_ad.val =   p_ad.val + fine_correction_p;
+  sW_ad.val = sW_ad.val + fine_correction_sW;
+
+  % p_approx = p_ad;
+ % sW_approx = sW_ad;
+
+%   figure
+%     subplot(4, 2, 1); plot(model.G.cells.indexMap,p_ad.val);
+%     title('Corrected Pressure')
+%     subplot(4, 2, 3); plot(1:coarse_model.G.cells.num,correction_p);
+%     title('Correction coarse Pressure')
+%     
+%     subplot(4, 2, 2); plot(model.G.cells.indexMap,sW_ad.val);
+%     title('Saturation')
+%     subplot(4, 2, 4); plot(1:coarse_model.G.cells.num,correction_sW);
+%     title('Correction coarse Saturation')
+%     drawnow   
+
+ 
   % Postsmoothing
   [p_approx,sW_approx,nit] = newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,v2,g,dt);
   

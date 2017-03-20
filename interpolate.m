@@ -5,7 +5,7 @@ function [fine_p, fine_sW] = interpolate(CG, coarse_p_ad, coarse_sW_ad)
   %fine_p_ad = coarseDataToFine(CG, coarse_p_ad);
   
   %fine_sW_ad = coarseDataToFine(CG, coarse_sW_ad);
-
+  
   fine_p = coarse_p_ad.val(CG.partition);
   
   fine_sW = coarse_sW_ad.val(CG.partition);

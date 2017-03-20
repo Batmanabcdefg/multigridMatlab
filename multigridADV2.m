@@ -51,9 +51,9 @@ sW_init = zeros(model.G.cells.num, 1);
 numSteps = 100;                  % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
-tol      = 1e-7;                % Newton tolerance
+tol      = 1e-5;                % Newton tolerance
 maxits   = 20;                  % max number of Newton its
-display(maxits)
+
 % Multigrid variables
 % Presmoothing steps
 v1_iter = 1;
@@ -71,7 +71,7 @@ figure(3)
 %% Main loop
 t = 0; step = 0;
 hwb = waitbar(t,'Simulation ..');
-while t < dt*15
+while t < totTime
    t = t + dt;
    step = step + 1;
    fprintf('\nTime step %d: Time %.2f -> %.2f days\n', ...
