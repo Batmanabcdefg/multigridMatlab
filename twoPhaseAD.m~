@@ -135,10 +135,15 @@ while t < totTime
       % Insert volumetric source term multiplied by density
       water(injIndex) = water(injIndex) - inRate.*rhoWS;
       % Set production cells to fixed pressure of 200 bar and zero water
+      water(prodIndex) = p_ad(prodIndex) - 200*barsa;
+      oil(prodIndex) = sW_ad(prodIndex);
+     
       if(t == dt)
         water(prodIndex) = p_ad(prodIndex) - 200*barsa;
       else
-          water(prodIndex) =  p_ad(prodIndex) - 200*barsa;
+          temp=  p_ad(prodIndex);
+          temp.val = 0;
+          water(prodIndex) = temp;
       end
       oil(prodIndex) = sW_ad(prodIndex);
       % Collect all equations
@@ -158,8 +163,8 @@ while t < totTime
       nit     = nit + 1;
       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
    end
-
-   if nit > maxits,
+   
+   if nit > maxits
       error('Newton solves did not converge')
    else % store solution
       sol(step+1)  = struct('time', t, ...

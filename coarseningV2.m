@@ -1,6 +1,5 @@
-function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_coarse, ...
-    p_ad_0_coarse, sW_ad_0_coarse] ...
-    = coarseningV2(model, p_ad, sW_ad,defect,p_ad_0,sW_ad_0)
+function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse, coarse_defect] ...
+    = coarseningV2(model, p_ad, sW_ad, p_ad_0, sW_ad_0, varargin)
   %% Function description
   %
   % PARAMETERS:
@@ -8,7 +7,7 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_
   %            substructs
   % p_ad     - ADI struct for the pressure
   % s_ad     - ADI struct for the saturation
-  % defect   - The defect of the current approximization.
+  % defect   - The defect of the current approximization. (NOTE: varargin)
   %
   % RETURNS:
   % p_ad_coarse - Coarsed version of the pressure eqs. with reinitialized
@@ -63,9 +62,19 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse,defect_p_ad_coarse,defect_s_ad_
   [p_ad_0_coarse, sW_ad_0_coarse] = initVariablesADI(coarse_p_0, coarse_sW_0);
 
   % Prolongate defect - sum
-  [defect_p_ad_coarse, defect_s_ad_coarse]= initVariablesADI(accumarray(partition,defect(model.pIx)),accumarray(partition,defect(model.sIx))); 
+%   coarse_water_defect = accumarray(partition,defect.water.val);
+%   coarse_oil_defect = accumarray(partition,defect.oil.val);
+  if isempty(varargin)
+    coarse_defect = 0;
+  else
+    defect = varargin{1};
+    [coarse_water_defect,coarse_oil_defect] ...
+      = initVariablesADI(accumarray(partition,defect.water.val),accumarray(partition,defect.oil.val));
+
+    coarse_defect = struct('water',coarse_water_defect, 'oil',coarse_oil_defect);
+  end
   
-  %Well conditions
+  % Well conditions
   
   coarse_model.well.inRate = model.well.inRate;
   coarse_model.well.outRate = model.well.outRate;

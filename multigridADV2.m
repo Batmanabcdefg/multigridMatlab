@@ -4,8 +4,8 @@ close all;
 
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 10,  1, 1);
-[Dx,Dy,Dz] = deal(200, 1, 1);
+[nx,ny,nz] = deal( 5,  5, 1);
+[Dx,Dy,Dz] = deal(100, 100, 1);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
 
@@ -18,25 +18,25 @@ rock = makeRock(grid, 30*milli*darcy, 0.3);
 % Initiate complete model
 model = initiateModel(grid, rock);
 
-
-p = linspace(100*barsa,220*barsa,50)';
-s = linspace(0,1,50)';
-plot(p/barsa, model.rock.pv_r(1).*exp(model.rock.cr*(p-model.rock.p_r)),'LineWidth',2);
+% 
+% p = linspace(100*barsa,220*barsa,50)';
+% s = linspace(0,1,50)';
+% plot(p/barsa, model.rock.pv_r(1).*exp(model.rock.cr*(p-model.rock.p_r)),'LineWidth',2);
 
 
 %% Plot model for two-phase compressible fluid
 % Water phase and a a lighter, more viscous oil phase with different relative
 % permeability function
 
-figure;
-plot(p/barsa, [model.water.rhoW(p), model.oil.rhoO(p)],'LineWidth',2);
-legend('Water density', 'Oil density')
-
-figure;
-plot(p/barsa, [model.water.krW(s), model.oil.krO(s)],'LineWidth',2);
-legend('krW', 'krO')
-
-spy(model.operator.C)
+% figure;
+% plot(p/barsa, [model.water.rhoW(p), model.oil.rhoO(p)],'LineWidth',2);
+% legend('Water density', 'Oil density')
+% 
+% figure;
+% plot(p/barsa, [model.water.krW(s), model.oil.krO(s)],'LineWidth',2);
+% legend('krW', 'krO')
+% 
+% spy(model.operator.C)
 
 %% Impose vertical equilibrium
 gravity reset on, g = norm(gravity);
@@ -78,8 +78,18 @@ while t < totTime
       step, convertTo(t - dt, day), convertTo(t, day));
 
   % Multigrid
-  [p_ad, sW_ad,nit] = multigridCycleV2(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt);
-
+  [p_ad, sW_ad,nit] = multigridCycleV3(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt);
+   
+  if mod(step,10) == 0
+    figure
+    subplot(2, 1, 1); plot(model.G.cells.indexMap,p_ad.val);
+    title('Pressure')
+    
+    subplot(2, 1, 2); plot(model.G.cells.indexMap,sW_ad.val);
+    title('Saturation')
+    drawnow
+   end
+   
    if nit > maxits
       error('Newton solves did not converge')
    else % store solution

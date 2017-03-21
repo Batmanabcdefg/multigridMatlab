@@ -1,7 +1,7 @@
 close all;
 %% Set up model geometry
-[nx,ny,nz] = deal( 10,  1, 1);
-[Dx,Dy,Dz] = deal(200, 1, 1);
+[nx,ny,nz] = deal( 5,  5, 1);
+[Dx,Dy,Dz] = deal(100, 100, 1);
 G = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 G = computeGeometry(G);
 
@@ -96,7 +96,7 @@ sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
 %% Main loop
 t = 0; step = 0;
 hwb = waitbar(t,'Simulation ..');
-while t < dt*3
+while t < totTime
    t = t + dt;
    step = step + 1;
    fprintf('\nTime step %d: Time %.2f -> %.2f days\n', ...
@@ -135,14 +135,9 @@ while t < dt*3
       % Insert volumetric source term multiplied by density
       water(injIndex) = water(injIndex) - inRate.*rhoWS;
       % Set production cells to fixed pressure of 200 bar and zero water
-      if(t == dt)
-        water(prodIndex) = p_ad(prodIndex) - 200*barsa;
-      else
-          temp=  p_ad(prodIndex);
-          temp.val = 0;
-          water(prodIndex) = temp;
-      end
+      water(prodIndex) = p_ad(prodIndex) - 200*barsa;
       oil(prodIndex) = sW_ad(prodIndex);
+      
       % Collect all equations
       eqs = {oil, water};
       % Concatenate equations and solve for update:
@@ -160,8 +155,17 @@ while t < dt*3
       nit     = nit + 1;
       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
    end
-   p_ad.val
-   if nit > maxits,
+   if mod(step,10) == 0
+    figure
+    subplot(2, 1, 1); plot(G.cells.indexMap,p_ad.val);
+    title('Pressure')
+    
+    subplot(2, 1, 2); plot(G.cells.indexMap,sW_ad.val);
+    title('Saturation')
+    drawnow
+   end
+  
+   if nit > maxits
       error('Newton solves did not converge')
    else % store solution
       sol(step+1)  = struct('time', t, ...

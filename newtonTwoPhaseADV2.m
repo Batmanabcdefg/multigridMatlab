@@ -1,4 +1,4 @@
-function [p_ad, sW_ad,res,nit] =  ...
+function [p_ad, sW_ad,nit] =  ...
     newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,varargin)
    %% Function description
    %
@@ -39,36 +39,20 @@ function [p_ad, sW_ad,res,nit] =  ...
    
   while (resNorm > tol) && (nit < maxits) && (old_res >= resNorm)
       old_res = resNorm;
-      % Evaluate properties
-      rW = model.water.rhoW(p_ad);
-      rW0 = model.water.rhoW(p0);
-      rO = model.oil.rhoO(p_ad);
-      rO0 = model.oil.rhoO(p0);
+     
+      [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,g,p0,sW0);
+      if(isempty(varargin) || (length(varargin) ~= 3) || nit > 0)
+        [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil);
+      else
+        boundaryCondition = varargin{3};
+        water = boundaryCondition.water;
+        oil = boundaryCondition.oil;
+%         %[water, oil] = boundaryConditions(model,p_ad,sW_ad,water,oil);
+%         water.val = water.val - boundaryCondition.water.val;
+%         oil.val = oil.val - boundaryCondition.oil.val;
+       [water, oil] = initVariablesADI(water.val,oil.val);
+      end
       
-      % Define pressure drop over interface for both phases
-      dp = model.operator.grad(p_ad);
-      dpW = dp - g*model.operator.avg(rW).*model.operator.gradz; % Water
-      dpO = dp - g*model.operator.avg(rO).*model.operator.gradz; % Oil
-      % Pore volume of cells at current pressure and previous pressure 
-      vol0 = model.rock.pv(p0);
-      vol = model.rock.pv(p_ad);
-      % Mobility: Relative permeability over constant viscosity
-      mobW = model.water.krW(sW_ad)./model.water.muW;
-      mobO = model.oil.krO(1-sW_ad)./model.oil.muO;
-      % Define phases fluxes. Density and mobility is taken upwinded (value
-      % on interface is defined as taken from the cell where the phase flow
-      % is currently coming from). This gives more physical solutions than
-      % averaging or downwinding.
-      vW = -model.operator.upw(double(dpW) <= 0, rW.*mobW).*model.T.*dpW;
-      vO = -model.operator.upw(double(dpO) <= 0, rO.*mobO).*model.T.*dpO;
-      % Conservation of water and oil
-      water = (1/dt).*(vol.*rW.*sW_ad - vol0.*rW0.*sW0) + model.operator.div(vW);
-      oil   = (1/dt).*(vol.*rO.*(1-sW_ad) - vol0.*rO0.*(1-sW0)) + model.operator.div(vO);
-      % Insert volumetric source term multiplied by density
-      water(model.well.injIndex) = water(model.well.injIndex) - model.well.inRate.*model.water.rhoWS;
-      % Set production cells to fixed pressure of 200 bar and zero water
-      water(model.well.prodIndex) = p_ad(model.well.prodIndex) - 200*barsa;
-      oil(model.well.prodIndex) = sW_ad(model.well.prodIndex);
       % Collect all equations
       eqs = {oil, water};
       % Concatenate equations and solve for update:
@@ -82,8 +66,9 @@ function [p_ad, sW_ad,res,nit] =  ...
       sW_ad.val = min(sW_ad.val, 1);
       sW_ad.val = max(sW_ad.val, 0);
 %     figure
-%     plot(1:model.G.cells.num,p_ad.val);
-%     title('Pressure')
+%     plot(1:model.G.cells.num,sW_ad.val);
+%     title('Saturation')
+      
       resNorm = norm(res);
       nit     = nit + 1;
       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
