@@ -14,10 +14,10 @@ cr   = 1e-6/barsa;
 p_r  = 200*barsa;
 pv_r = poreVolume(G, rock);
 pv   = @(p) pv_r .* exp( cr * (p - p_r) );
-
-p = linspace(100*barsa,220*barsa,50)';
-s = linspace(0,1,50)';
-plot(p/barsa, pv_r(1).*exp(cr*(p-p_r)),'LineWidth',2);
+ 
+% p = linspace(100*barsa,220*barsa,50)';
+% s = linspace(0,1,50)';
+% plot(p/barsa, pv_r(1).*exp(cr*(p-p_r)),'LineWidth',2);
 
 
 %% Define model for two-phase compressible fluid
@@ -38,13 +38,13 @@ rhoOS  = 750*kilogram/meter^3;
 krO = @(S) S.^3;
 
 rhoO   = @(p) rho_ro .* exp( co * (p - p_r) );
-figure;
-plot(p/barsa, [rhoW(p), rhoO(p)],'LineWidth',2);
-legend('Water density', 'Oil density')
+% figure;
+% plot(p/barsa, [rhoW(p), rhoO(p)],'LineWidth',2);
+% legend('Water density', 'Oil density')
 
-figure;
-plot(p/barsa, [krW(s), krO(s)],'LineWidth',2);
-legend('krW', 'krO')
+% figure;
+% plot(p/barsa, [krW(s), krO(s)],'LineWidth',2);
+% legend('krW', 'krO')
 %% Impose vertical equilibrium
 gravity reset on, g = norm(gravity);
 [z_0, z_max] = deal(0, max(G.cells.centroids(:,3)));
@@ -68,7 +68,7 @@ grad = @(x)C*x; % Discrete gradient
 div  = @(x)-C'*x; % Discrete divergence
 avg  = @(x) 0.5 * (x(N(:,1)) + x(N(:,2))); % Averaging
 upw = @(flag, x) flag.*x(N(:, 1)) + ~flag.*x(N(:, 2)); % Upwinding
-spy(C)
+% spy(C)
 
 gradz  = grad(G.cells.centroids(:,3));
 %% Initialize for solution loop
@@ -80,7 +80,7 @@ sIx = (nc+1):(2*nc);
 numSteps = 100;                  % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
-tol      = 1e-5;                % Newton tolerance
+tol      = 1e-4;                % Newton tolerance
 maxits   = 15;                  % max number of Newton its
 
 injIndex = 1;
@@ -135,9 +135,43 @@ while t < totTime
       % Insert volumetric source term multiplied by density
       water(injIndex) = water(injIndex) - inRate.*rhoWS;
       % Set production cells to fixed pressure of 200 bar and zero water
-      water(prodIndex) = p_ad(prodIndex) - 200*barsa;
-      oil(prodIndex) = sW_ad(prodIndex);
+%       water(prodIndex) = sW_ad(prodIndex);
+%       oil(prodIndex) = p_ad(prodIndex) - 200*barsa;
+
+%       water(prodIndex) = p_ad(prodIndex) - 200*barsa;
+%       oil(prodIndex)  = sW_ad(prodIndex) - outRate;
       
+%       water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - 200*barsa;
+%       
+%       oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex) - outRate;
+      
+%       
+%         mob_total = mobW(prodIndex).val + mobO(prodIndex).val;
+%         q_t =  - mob_total*(p_ad(prodIndex).val - 200*barsa);
+%         
+%         q_w = - mobW(prodIndex).val*(p_ad(prodIndex).val - 200*barsa)*rhoWS;
+%         q_o = - mobO(prodIndex).val*(p_ad(prodIndex).val - 200*barsa)*rhoOS;
+
+%         if(mobW(prodIndex).val == 0)
+%             q_w = 0;
+%         else
+%             q_w = - (q_t/mobW(prodIndex).val)*rhoWS;
+%         end
+%         q_o = - (q_t/mobO(prodIndex).val)*rhoOS;
+%       water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - q_t;
+%       oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex);% - sW_ad(prodIndex).val - q_t*(mobO(prodIndex).val/mob_total);
+
+        q_w = (2*pi*rW(prodIndex)*rock.perm(prodIndex)*mobW(prodIndex)*G.cells.centroids(prodIndex,3)) ...
+            *(200*barsa - p_ad(prodIndex).val);
+        q_o = (2*pi*rO(prodIndex)*rock.perm(prodIndex)*mobO(prodIndex)*G.cells.centroids(prodIndex,3)) ...
+            *(200*barsa - p_ad(prodIndex).val);
+ water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - p_ad(prodIndex).val + q_w.val;
+ oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex)- sW_ad(prodIndex).val + q_o.val;
+
+      
+%       water(prodIndex) = water(prodIndex) - q_w;
+%       oil(prodIndex) =  oil(prodIndex) - q_o;
+%       
       % Collect all equations
       eqs = {oil, water};
       % Concatenate equations and solve for update:

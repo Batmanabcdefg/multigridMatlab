@@ -27,7 +27,8 @@ function [p_ad, sW_ad,nit] =  ...
 
 %% Body
    if(isempty(varargin))
-       p0  = double(p_ad); % Previous step pressure
+       % Previous step values
+       p0  = double(p_ad); 
        sW0 = double(sW_ad);
    else
        p0 = double(varargin{1});
@@ -41,15 +42,14 @@ function [p_ad, sW_ad,nit] =  ...
       old_res = resNorm;
      
       [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,g,p0,sW0);
+
       if(isempty(varargin) || (length(varargin) ~= 3) || nit > 0)
         [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil);
+      
       else
         boundaryCondition = varargin{3};
         water = boundaryCondition.water;
         oil = boundaryCondition.oil;
-%         %[water, oil] = boundaryConditions(model,p_ad,sW_ad,water,oil);
-%         water.val = water.val - boundaryCondition.water.val;
-%         oil.val = oil.val - boundaryCondition.oil.val;
        [water, oil] = initVariablesADI(water.val,oil.val);
       end
       
