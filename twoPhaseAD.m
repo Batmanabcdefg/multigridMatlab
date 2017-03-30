@@ -165,8 +165,8 @@ while t < totTime
             *(200*barsa - p_ad(prodIndex).val);
         q_o = (2*pi*rO(prodIndex)*rock.perm(prodIndex)*mobO(prodIndex)*G.cells.centroids(prodIndex,3)) ...
             *(200*barsa - p_ad(prodIndex).val);
- water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - p_ad(prodIndex).val + q_w.val;
- oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex)- sW_ad(prodIndex).val + q_o.val;
+    water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - p_ad(prodIndex).val + q_w.val;
+    oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex)- sW_ad(prodIndex).val + q_o.val;
 
       
 %       water(prodIndex) = water(prodIndex) - q_w;

@@ -24,13 +24,34 @@ function [model] = initiateModel(G,rock,varargin)
   % SEE ALSO:
   %
 
+  %% Define wells
+  injIndex = 1;
+  prodIndex = G.cells.num;
+
+  inRate = 1;
+  outRate = 0.5;
+  
+  well = struct('injIndex',injIndex, 'prodIndex',prodIndex, 'inRate', inRate, 'outRate', outRate);
+  
   %% Rock model
  %rock = makeRock(G, 30*milli*darcy, 0.3);
   cr   = 1e-6/barsa;
   p_r  = 200*barsa;
   pv_r = poreVolume(G, rock);
   pv   = @(p) pv_r .* exp( cr * (p - p_r) );
-  
+
+  if(strcmp(G.type{1},'generateCoarseGrid'))
+      old_model = varargin{1};
+      %pv_r = accumarray(partition,old_model.rock.pv_r);
+      
+      rock.perm(injIndex) = old_model.rock.perm(old_model.well.injIndex);
+      rock.perm(prodIndex) = old_model.rock.perm(old_model.well.prodIndex);
+      
+      rock.poro(injIndex) = old_model.rock.poro(old_model.well.injIndex);
+      rock.poro(prodIndex) = old_model.rock.poro(old_model.well.prodIndex);
+          pv_r(injIndex) = old_model.rock.pv_r(old_model.well.injIndex);
+      pv_r(prodIndex) = old_model.rock.pv_r(old_model.well.prodIndex);
+  end
   %rock struct
   rock = struct('perm',rock.perm,'poro',rock.poro, ...
       'cr', cr, 'p_r',p_r, 'pv_r', pv_r, 'pv',pv);
@@ -58,6 +79,7 @@ function [model] = initiateModel(G,rock,varargin)
 
   oil = struct('muO', muO, 'co', co, 'rho_ro', rho_ro, 'rhoOS', rhoOS, 'rhoO', rhoO, 'krO', krO);
   
+  
   %% Compute transmissibilities
   N  = double(G.faces.neighbors);
   intInx = all(N ~= 0, 2);
@@ -79,15 +101,6 @@ function [model] = initiateModel(G,rock,varargin)
   gradz  = grad(G.cells.centroids(:,3));
 
   operator = struct('grad', grad, 'div', div, 'avg', avg, 'upw', upw, 'gradz', gradz, 'C',C);
-  
-  %% Define wells
-  injIndex = 1;
-  prodIndex = G.cells.num;
-
-  inRate = 1;
-  outRate = 0.5;
-  
-  well = struct('injIndex',injIndex, 'prodIndex',prodIndex, 'inRate', inRate, 'outRate', outRate);
   
   %% Remaining variables
   %Note: Write a better description

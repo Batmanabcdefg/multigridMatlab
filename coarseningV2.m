@@ -28,6 +28,9 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
   % Set up coarse grid
   coarse_dims = ceil(model.G.cartDims/2);
   partition  = partitionCartGrid(model.G.cartDims,coarse_dims);
+%   partition = partition + 1;
+%   partition(model.well.injIndex) = 1;
+  partition(model.well.prodIndex) = partition(model.well.prodIndex) + 1;
   CG = generateCoarseGrid(model.G, partition);
   CG = coarsenGeometry(CG);
   
@@ -39,14 +42,16 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
   %coarse = true;
   %model_coarse = initiateModel(CG, rock_coarse, coarse); 
   %}
-  coarse_model = initiateModel(CG, rock_coarse);
+  weighting = accumarray(partition,1);
+  
+  coarse_model = initiateModel(CG, rock_coarse,model,weighting);
 
   % Add fields to the coarse grid to ensure that it passes as a
   % regular grid for our purposes.
   coarse_model.G.cartDims = coarse_dims;
   
   %% Restrict AD variables and defect
-  weighting = accumarray(partition,1);
+  
   
   coarse_p_init = accumarray(partition, p_ad.val)./weighting;
   %NB! No weighting of saturation(?) Plotting of saturation suggests no

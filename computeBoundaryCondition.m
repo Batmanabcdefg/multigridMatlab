@@ -4,9 +4,9 @@ function [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil,vara
   if(~isempty(varargin))
       % Computation of defect
      sign = -1;
-  elseif(strcmp(model.G.type{1},'generateCoarseGrid'))   
-      scale = norm(model.G.cartDims)/norm(model.G.parent.cartDims); 
-      sign = scale;
+%   elseif(strcmp(model.G.type{1},'generateCoarseGrid'))   
+%       scale = norm(model.G.cartDims)/norm(model.G.parent.cartDims); 
+%       sign = scale;
   end
  %% Set injection well boundary conditions
   % Insert volumetric source term multiplied by density
