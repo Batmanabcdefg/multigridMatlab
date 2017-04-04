@@ -4,8 +4,8 @@ close all;
 
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 5,  5, 1);
-[Dx,Dy,Dz] = deal(100, 100, 1);
+[nx,ny,nz] = deal( 10,  10, 1);
+[Dx,Dy,Dz] = deal(200, 200, 1);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
 

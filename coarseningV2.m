@@ -27,21 +27,16 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
   %% Create new coarse model
   % Set up coarse grid
   coarse_dims = ceil(model.G.cartDims/2);
+  
   partition  = partitionCartGrid(model.G.cartDims,coarse_dims);
-%   partition = partition + 1;
-%   partition(model.well.injIndex) = 1;
   partition(model.well.prodIndex) = partition(model.well.prodIndex) + 1;
+  
   CG = generateCoarseGrid(model.G, partition);
   CG = coarsenGeometry(CG);
   
   % Define coarse rock
   rock_coarse = makeRock(CG, 30*milli*darcy, 0.3);
   
-  % Initiate new coarse model
-  %{Not currently in use
-  %coarse = true;
-  %model_coarse = initiateModel(CG, rock_coarse, coarse); 
-  %}
   weighting = accumarray(partition,1);
   
   coarse_model = initiateModel(CG, rock_coarse,model,weighting);
@@ -54,24 +49,19 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
   
   
   coarse_p_init = accumarray(partition, p_ad.val)./weighting;
-  %NB! No weighting of saturation(?) Plotting of saturation suggests no
-  %weighting
-  coarse_sW_init = accumarray(partition,sW_ad.val);%./weighting;
+  coarse_sW_init = accumarray(partition,sW_ad.val)./weighting;
+  
   % Until a better aproach is found, the ADI varaables is re-initiated 
   [p_ad_coarse, sW_ad_coarse] = initVariablesADI(coarse_p_init, coarse_sW_init);
 
   coarse_p_0 = accumarray(partition, p_ad_0.val)./weighting;
-  coarse_sW_0 = accumarray(partition,sW_ad_0.val);%./weighting;
+  coarse_sW_0 = accumarray(partition,sW_ad_0.val)./weighting;
   
   % Until a better aproach is found, the ADI varaables is re-initiated 
   [p_ad_0_coarse, sW_ad_0_coarse] = initVariablesADI(coarse_p_0, coarse_sW_0);
-
-  % Prolongate defect - sum
-%   coarse_water_defect = accumarray(partition,defect.water.val);
-%   coarse_oil_defect = accumarray(partition,defect.oil.val);
-  if isempty(varargin)
-    coarse_defect = 0;
-  else
+  
+  coarse_defect = 0;
+  if(~isempty(varargin))
     defect = varargin{1};
     [coarse_water_defect,coarse_oil_defect] ...
       = initVariablesADI(accumarray(partition,defect.water.val),accumarray(partition,defect.oil.val));
