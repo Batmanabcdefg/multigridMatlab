@@ -4,8 +4,8 @@ close all;
 
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 10,  10, 1);
-[Dx,Dy,Dz] = deal(200, 200, 1);
+[nx,ny,nz] = deal( 16,  16, 2);
+[Dx,Dy,Dz] = deal(200, 200, 50);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
 
@@ -52,14 +52,23 @@ numSteps = 100;                  % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
 tol      = 1e-5;                % Newton tolerance
-maxits   = 20;                  % max number of Newton its
+maxits   = 15;                  % max number of Newton its
 
 % Multigrid variables
+
 % Presmoothing steps
 v1_iter = 1;
+
 % Postsmoothing steps
 v2_iter = 5;
 
+% Number of levels
+if(model.G.cartDims(3)>1)
+  k_level = floor(log(model.G.cells.num) /log(2^3));
+else
+  k_level = floor(log(model.G.cells.num) /log(2^2));
+end
+cycle_index = 1;
 
 model.well.inRate = 1*sum(model.rock.pv(p_init))/totTime;
 model.well.outRate = 0.5*model.well.inRate;
@@ -67,7 +76,7 @@ model.well.outRate = 0.5*model.well.inRate;
 sol = repmat(struct('time',[],'pressure',[], 's', []),[numSteps+1,1]);
 sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
     's', double(sW_ad));
-figure(3)
+
 %% Main loop
 t = 0; step = 0;
 hwb = waitbar(t,'Simulation ..');
@@ -78,17 +87,20 @@ while t < totTime
       step, convertTo(t - dt, day), convertTo(t, day));
 
   % Multigrid
-  [p_ad, sW_ad,nit] = multigridCycleV3(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt);
+  
+%   [p_ad, sW_ad,nit] = multigridCycleV3(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt);
    
-  if mod(step,10) == 0
-    figure
-    subplot(2, 1, 1); plot(model.G.cells.indexMap,p_ad.val);
-    title('Pressure')
-    
-    subplot(2, 1, 2); plot(model.G.cells.indexMap,sW_ad.val);
-    title('Saturation')
-    drawnow
-   end
+  [p_ad, sW_ad,nit] = multigridCycleV4(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt,k_level,cycle_index);
+   
+%   if mod(step,10) == 0
+%     figure
+%     subplot(2, 1, 1); plot(model.G.cells.indexMap,p_ad.val);
+%     title('Pressure')
+%     
+%     subplot(2, 1, 2); plot(model.G.cells.indexMap,sW_ad.val);
+%     title('Saturation')
+%     drawnow
+%    end
    
    if nit > maxits
       error('Newton solves did not converge')

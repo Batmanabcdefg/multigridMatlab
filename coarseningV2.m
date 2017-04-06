@@ -29,7 +29,12 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
   coarse_dims = ceil(model.G.cartDims/2);
   
   partition  = partitionCartGrid(model.G.cartDims,coarse_dims);
+  
+  if(size(partition,1) < model.G.cells.num)
+      partition = cat(1,partition,partition(end));
+  end
   partition(model.well.prodIndex) = partition(model.well.prodIndex) + 1;
+%   partition(model.G.cells.num) = partition(model.G.cells.num) + 1;
   
   CG = generateCoarseGrid(model.G, partition);
   CG = coarsenGeometry(CG);

@@ -1,7 +1,7 @@
 close all;
 %% Set up model geometry
-[nx,ny,nz] = deal( 3,  3, 1);
-[Dx,Dy,Dz] = deal(100, 100, 1);
+[nx,ny,nz] = deal( 10,  10, 1);
+[Dx,Dy,Dz] = deal(200, 200, 1);
 G = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 G = computeGeometry(G);
 
@@ -135,42 +135,20 @@ while t < totTime
       % Insert volumetric source term multiplied by density
       water(injIndex) = water(injIndex) - inRate.*rhoWS;
       % Set production cells to fixed pressure of 200 bar and zero water
-%       water(prodIndex) = sW_ad(prodIndex);
-%       oil(prodIndex) = p_ad(prodIndex) - 200*barsa;
-
-%       water(prodIndex) = p_ad(prodIndex) - 200*barsa;
-%       oil(prodIndex)  = sW_ad(prodIndex) - outRate;
-      
-%       water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - 200*barsa;
-%       
-%       oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex) - outRate;
-      
-%       
-%         mob_total = mobW(prodIndex).val + mobO(prodIndex).val;
-%         q_t =  - mob_total*(p_ad(prodIndex).val - 200*barsa);
+      water(prodIndex) = sW_ad(prodIndex);
+      oil(prodIndex) = p_ad(prodIndex) - 200*barsa;
+%    oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex);% - sW_ad(prodIndex).val - q_t*(mobO(prodIndex).val/mob_total);
+% 
+%         q_w = (2*pi*rW(prodIndex)*rock.perm(prodIndex)*mobW(prodIndex)*G.cells.centroids(prodIndex,3)) ...
+%             *(200*barsa - p_ad(prodIndex).val);
+%         q_o = (2*pi*rO(prodIndex)*rock.perm(prodIndex)*mobO(prodIndex)*G.cells.centroids(prodIndex,3)) ...
+%             *(200*barsa - p_ad(prodIndex).val);
 %         
-%         q_w = - mobW(prodIndex).val*(p_ad(prodIndex).val - 200*barsa)*rhoWS;
-%         q_o = - mobO(prodIndex).val*(p_ad(prodIndex).val - 200*barsa)*rhoOS;
-
-%         if(mobW(prodIndex).val == 0)
-%             q_w = 0;
-%         else
-%             q_w = - (q_t/mobW(prodIndex).val)*rhoWS;
-%         end
-%         q_o = - (q_t/mobO(prodIndex).val)*rhoOS;
-%       water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - q_t;
-%       oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex);% - sW_ad(prodIndex).val - q_t*(mobO(prodIndex).val/mob_total);
-
-        q_w = (2*pi*rW(prodIndex)*rock.perm(prodIndex)*mobW(prodIndex)*G.cells.centroids(prodIndex,3)) ...
-            *(200*barsa - p_ad(prodIndex).val);
-        q_o = (2*pi*rO(prodIndex)*rock.perm(prodIndex)*mobO(prodIndex)*G.cells.centroids(prodIndex,3)) ...
-            *(200*barsa - p_ad(prodIndex).val);
-        
-    water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - p_ad(prodIndex).val ...
-        + q_w.val;
-    oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex)- sW_ad(prodIndex).val ...
-        + q_o.val;
-
+%     water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - p_ad(prodIndex).val ...
+%         + q_w.val;
+%     oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex)- sW_ad(prodIndex).val ...
+%         + q_o.val;
+% 
       
 %       water(prodIndex) = water(prodIndex) - q_w;
 %       oil(prodIndex) =  oil(prodIndex) - q_o;
@@ -192,15 +170,15 @@ while t < totTime
       nit     = nit + 1;
       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
    end
-   if mod(step,10) == 0
-    figure
-    subplot(2, 1, 1); plot(G.cells.indexMap,p_ad.val);
-    title('Pressure')
-    
-    subplot(2, 1, 2); plot(G.cells.indexMap,sW_ad.val);
-    title('Saturation')
-    drawnow
-   end
+%    if mod(step,10) == 0
+%     figure
+%     subplot(2, 1, 1); plot(G.cells.indexMap,p_ad.val);
+%     title('Pressure')
+%     
+%     subplot(2, 1, 2); plot(G.cells.indexMap,sW_ad.val);
+%     title('Saturation')
+%     drawnow
+%    end
   
    if nit > maxits
       error('Newton solves did not converge')

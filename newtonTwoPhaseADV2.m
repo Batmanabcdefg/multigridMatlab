@@ -1,5 +1,5 @@
 function [p_ad, sW_ad,nit] =  ...
-    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,varargin)
+    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,p_ad_0,sW_ad_0,varargin)
    %% Function description
    %
    % PARAMETERS:
@@ -12,6 +12,9 @@ function [p_ad, sW_ad,nit] =  ...
    % maxits   - The maximum number of newton iterations perfomed
    % g        - gravity constant 
    % dt       - current time step
+   % p_ad_0   - Pressure ADI from previous timestep
+   % sW_ad_0  - Saturation ADI from previous timestep
+   % varargin - boundary condition from multigrid cycle
    %
    % RETURNS:
    % p_ad     - Approximated values of the pressure stored in ADI structure
@@ -26,14 +29,10 @@ function [p_ad, sW_ad,nit] =  ...
    %
 
 %% Body
-   if(isempty(varargin))
-       % Previous step values
-       p0  = double(p_ad); 
-       sW0 = double(sW_ad);
-   else
-       p0 = double(varargin{1});
-       sW0 = double(varargin{2});
-   end
+
+   p0 = double(p_ad_0);
+   sW0 = double(sW_ad_0);
+
    
    nit = 0;
    resNorm = 1e99;
@@ -79,6 +78,8 @@ function [p_ad, sW_ad,nit] =  ...
       
       resNorm = norm(res);
       nit     = nit + 1;
-      fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
-   end
+%       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
+  end
+   fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm)
+%    fprintf('Iterantions: %3d\n', nit)
 end
