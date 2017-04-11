@@ -1,7 +1,7 @@
 close all;
 %% Set up model geometry
-[nx,ny,nz] = deal( 10,  10, 1);
-[Dx,Dy,Dz] = deal(200, 200, 1);
+[nx,ny,nz] = deal( 16,  16, 2);
+[Dx,Dy,Dz] = deal(200, 200, 50);
 G = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 G = computeGeometry(G);
 
@@ -15,9 +15,9 @@ p_r  = 200*barsa;
 pv_r = poreVolume(G, rock);
 pv   = @(p) pv_r .* exp( cr * (p - p_r) );
  
-% p = linspace(100*barsa,220*barsa,50)';
-% s = linspace(0,1,50)';
-% plot(p/barsa, pv_r(1).*exp(cr*(p-p_r)),'LineWidth',2);
+p = linspace(100*barsa,220*barsa,50)';
+s = linspace(0,1,50)';
+plot(p/barsa, pv_r(1).*exp(cr*(p-p_r)),'LineWidth',2);
 
 
 %% Define model for two-phase compressible fluid
@@ -32,19 +32,19 @@ krW = @(S) S.^2;
 % Define a lighter, more viscous oil phase with different relative
 % permeability function
 muO   = 5*centi*poise;
-co      = 1e-4/barsa;
+co      = 1e-2/barsa;
 rho_ro = 850*kilogram/meter^3;
 rhoOS  = 750*kilogram/meter^3;
 krO = @(S) S.^3;
 
 rhoO   = @(p) rho_ro .* exp( co * (p - p_r) );
-% figure;
-% plot(p/barsa, [rhoW(p), rhoO(p)],'LineWidth',2);
-% legend('Water density', 'Oil density')
+figure;
+plot(p/barsa, [rhoW(p), rhoO(p)],'LineWidth',2);
+legend('Water density', 'Oil density')
 
-% figure;
-% plot(p/barsa, [krW(s), krO(s)],'LineWidth',2);
-% legend('krW', 'krO')
+figure;
+plot(p/barsa, [krW(s), krO(s)],'LineWidth',2);
+legend('krW', 'krO')
 %% Impose vertical equilibrium
 gravity reset on, g = norm(gravity);
 [z_0, z_max] = deal(0, max(G.cells.centroids(:,3)));
@@ -168,7 +168,7 @@ while t < totTime
       
       resNorm = norm(res);
       nit     = nit + 1;
-      fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
+%       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
    end
 %    if mod(step,10) == 0
 %     figure
@@ -188,6 +188,7 @@ while t < totTime
                             's', double(sW_ad));
       waitbar(t/totTime,hwb);
    end
+    fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
 end
 close(hwb);
 

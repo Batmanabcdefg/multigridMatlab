@@ -1,4 +1,4 @@
-function [model] = initiateModel(G,rock,varargin)
+function [model] = initiateModel(G,varargin)
   %% Function description
   %
   % PARAMETERS:
@@ -34,8 +34,15 @@ function [model] = initiateModel(G,rock,varargin)
   well = struct('injIndex',injIndex, 'prodIndex',prodIndex, 'inRate', inRate, 'outRate', outRate);
   
   %% Rock model
- %rock = makeRock(G, 30*milli*darcy, 0.3);
+  % Call to makeRock(grid, permeability, porosity) to initiate rock model
+  % permeability range: {poor: 1-15, moderate: 15-20, good: 50-250, very
+  % good: 250-1000
+  % porosity range: {fair: 0.25, very low: 0.1}
+  rock = makeRock(G, 30*milli*darcy, 0.25);
+  % Compressibility: normally in the range of 10^-6 to 10^-7, assumed to be
+  % constant
   cr   = 1e-6/barsa;
+  % Reference pressure
   p_r  = 200*barsa;
   pv_r = poreVolume(G, rock);
   pv   = @(p) pv_r .* exp( cr * (p - p_r) );
@@ -70,7 +77,9 @@ function [model] = initiateModel(G,rock,varargin)
   % Define a lighter, more viscous oil phase with different relative
   % permeability function
   muO   = 5*centi*poise;
-  co      = 1e-4/barsa;
+  % Compressibility range: {slighly: 10^-5 to 10^-6, compressible: 10^-3 to
+  % 10^-4}psi^-1
+  co      = 1e-3/barsa;
   rho_ro = 850*kilogram/meter^3;
   rhoOS  = 750*kilogram/meter^3;
   krO = @(S) S.^3;

@@ -11,12 +11,9 @@ grid = computeGeometry(grid);
 
 plotGrid(grid); view(3); axis tight
 
-% Define rock model
-rock = makeRock(grid, 30*milli*darcy, 0.3);
-
 
 % Initiate complete model
-model = initiateModel(grid, rock);
+model = initiateModel(grid);
 
 % 
 % p = linspace(100*barsa,220*barsa,50)';
@@ -60,7 +57,7 @@ maxits   = 15;                  % max number of Newton its
 v1_iter = 1;
 
 % Postsmoothing steps
-v2_iter = 5;
+v2_iter = 3;
 
 % Number of levels
 if(model.G.cartDims(3)>1)

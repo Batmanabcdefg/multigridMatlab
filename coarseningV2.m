@@ -40,11 +40,11 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
   CG = coarsenGeometry(CG);
   
   % Define coarse rock
-  rock_coarse = makeRock(CG, 30*milli*darcy, 0.3);
+  %rock_coarse = makeRock(CG, 30*milli*darcy, 0.3);
   
   weighting = accumarray(partition,1);
   
-  coarse_model = initiateModel(CG, rock_coarse,model,weighting);
+  coarse_model = initiateModel(CG, model,weighting);
 
   % Add fields to the coarse grid to ensure that it passes as a
   % regular grid for our purposes.

@@ -43,11 +43,11 @@ function [p_ad, sW_ad,nit] =  ...
      
       [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,g,p0,sW0);
 
-      if(isempty(varargin) || (length(varargin) ~= 3) || nit > 0)
+      if(isempty(varargin) || isempty(varargin{1}))% || nit > 0)
         [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil);
       
       else
-          boundaryCondition = varargin{3};
+          boundaryCondition = varargin{1};
           water = water + boundaryCondition.water;
           oil = oil + boundaryCondition.oil;
           water_val = water(model.well.prodIndex).val;
