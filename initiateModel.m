@@ -1,4 +1,4 @@
-function [model] = initiateModel(G,varargin)
+function [model] = initiateModel(grid,varargin)
   %% Function description
   %
   % PARAMETERS:
@@ -26,7 +26,7 @@ function [model] = initiateModel(G,varargin)
 
   %% Define wells
   injIndex = 1;
-  prodIndex = G.cells.num;
+  prodIndex = grid.cells.num;
 
   inRate = 1;
   outRate = 0.5;
@@ -38,16 +38,16 @@ function [model] = initiateModel(G,varargin)
   % permeability range: {poor: 1-15, moderate: 15-20, good: 50-250, very
   % good: 250-1000
   % porosity range: {fair: 0.25, very low: 0.1}
-  rock = makeRock(G, 30*milli*darcy, 0.25);
+  rock = makeRock(grid, 30*milli*darcy, 0.25);
   % Compressibility: normally in the range of 10^-6 to 10^-7, assumed to be
   % constant
   cr   = 1e-6/barsa;
   % Reference pressure
   p_r  = 200*barsa;
-  pv_r = poreVolume(G, rock);
+  pv_r = poreVolume(grid, rock);
   pv   = @(p) pv_r .* exp( cr * (p - p_r) );
 
-  if(strcmp(G.type{1},'generateCoarseGrid'))
+  if(strcmp(grid.type{1},'generateCoarseGrid'))
       old_model = varargin{1};
       %pv_r = accumarray(partition,old_model.rock.pv_r);
       
@@ -90,38 +90,39 @@ function [model] = initiateModel(G,varargin)
   
   
   %% Compute transmissibilities
-  N  = double(G.faces.neighbors);
+  N  = double(grid.faces.neighbors);
   intInx = all(N ~= 0, 2);
   N  = N(intInx, :);                          % Interior neighbors
-  hT = computeTrans(G, rock);                 % Half-transmissibilities
-  cf = G.cells.faces(:,1);
-  nf = G.faces.num;
+  hT = computeTrans(grid, rock);                 % Half-transmissibilities
+  cf = grid.cells.faces(:,1);
+  nf = grid.faces.num;
   T  = 1 ./ accumarray(cf, 1 ./ hT, [nf, 1]); % Harmonic average
   T  = T(intInx);                             % Restricted to interior
   
   %% Define discrete operators
   n = size(N,1);
-  C = sparse( [(1:n)'; (1:n)'], N, ones(n,1)*[-1 1], n, G.cells.num);
+  C = sparse( [(1:n)'; (1:n)'], N, ones(n,1)*[-1 1], n, grid.cells.num);
   grad = @(x)C*x; % Discrete gradient
   div  = @(x)-C'*x; % Discrete divergence
   avg  = @(x) 0.5 * (x(N(:,1)) + x(N(:,2))); % Averaging
   upw = @(flag, x) flag.*x(N(:, 1)) + ~flag.*x(N(:, 2)); % Upwinding 
 
-  gradz  = grad(G.cells.centroids(:,3));
+  gradz  = grad(grid.cells.centroids(:,3));
 
   operator = struct('grad', grad, 'div', div, 'avg', avg, 'upw', upw, 'gradz', gradz, 'C',C);
   
   %% Remaining variables
   %Note: Write a better description
-  nc = G.cells.num;
+  nc = grid.cells.num;
   pIx = 1:nc;
   sIx = (nc+1):(2*nc);
   p_ad = 0;
   sW_ad = 0;
+  gravity reset on, g = norm(gravity);
   
   
   %% Place all model parts and help function i a "modelstruct"
-  model = struct('G',G,'rock', rock, 'water', water, 'oil',oil, 'T', T, ...
-      'operator', operator, 'well', well, 'pIx', pIx,'sIx',sIx,'p_ad',p_ad,'sW_ad',sW_ad);
+  model = struct('grid',grid,'rock', rock, 'water', water, 'oil',oil, 'T', T, ...
+      'operator', operator, 'well', well, 'pIx', pIx,'sIx',sIx,'p_ad',p_ad,'sW_ad',sW_ad,'g',g);
 
 end

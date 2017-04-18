@@ -26,29 +26,31 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
 
   %% Create new coarse model
   % Set up coarse grid
-  coarse_dims = ceil(model.G.cartDims/2);
+  coarse_dims = ceil(model.grid.cartDims/2);
+  coarse_dims(3) = model.grid.cartDims(3);
+  partition  = partitionCartGrid(model.grid.cartDims,coarse_dims);
   
-  partition  = partitionCartGrid(model.G.cartDims,coarse_dims);
-  
-  if(size(partition,1) < model.G.cells.num)
-      partition = cat(1,partition,partition(end));
+  if(size(partition,1) < model.grid.cells.num)
+      diff = model.grid.cells.num - size(partition,1);
+      partition = cat(model.grid.cells.num - size(partition,1),partition,partition(end-diff,end));
   end
+  %partition(2:end) = partition(2:end) +1;
   partition(model.well.prodIndex) = partition(model.well.prodIndex) + 1;
-%   partition(model.G.cells.num) = partition(model.G.cells.num) + 1;
+%   partition(model.grid.cells.num) = partition(model.grid.cells.num) + 1;
   
-  CG = generateCoarseGrid(model.G, partition);
-  CG = coarsenGeometry(CG);
+  coarse_grid = generateCoarseGrid(model.grid, partition);
+  coarse_grid = coarsenGeometry(coarse_grid);
   
   % Define coarse rock
   %rock_coarse = makeRock(CG, 30*milli*darcy, 0.3);
   
   weighting = accumarray(partition,1);
   
-  coarse_model = initiateModel(CG, model,weighting);
+  coarse_model = initiateModel(coarse_grid, model,weighting);
 
   % Add fields to the coarse grid to ensure that it passes as a
   % regular grid for our purposes.
-  coarse_model.G.cartDims = coarse_dims;
+  coarse_model.grid.cartDims = coarse_dims;
   
   %% Restrict AD variables and defect
   

@@ -1,4 +1,4 @@
-function [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,g,p0,sW0)
+function [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,p0,sW0)
   % Evaluate properties
   rW = model.water.rhoW(p_ad);
   rW0 = model.water.rhoW(p0);
@@ -7,8 +7,8 @@ function [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,g,p0,sW0)
       
   % Define pressure drop over interface for both phases
   dp = model.operator.grad(p_ad);
-  dpW = dp - g*model.operator.avg(rW).*model.operator.gradz; % Water
-  dpO = dp - g*model.operator.avg(rO).*model.operator.gradz; % Oil
+  dpW = dp - model.g*model.operator.avg(rW).*model.operator.gradz; % Water
+  dpO = dp - model.g*model.operator.avg(rO).*model.operator.gradz; % Oil
   % Pore volume of cells at current pressure and previous pressure 
   vol0 = model.rock.pv(p0);
   vol = model.rock.pv(p_ad);

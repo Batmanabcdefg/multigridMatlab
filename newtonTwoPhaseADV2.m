@@ -1,5 +1,5 @@
 function [p_ad, sW_ad,nit] =  ...
-    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,g,dt,p_ad_0,sW_ad_0,varargin)
+    newtonTwoPhaseADV2(model,p_ad,sW_ad,tol,maxits,dt,p_ad_0,sW_ad_0,varargin)
    %% Function description
    %
    % PARAMETERS:
@@ -32,7 +32,6 @@ function [p_ad, sW_ad,nit] =  ...
 
    p0 = double(p_ad_0);
    sW0 = double(sW_ad_0);
-
    
    nit = 0;
    resNorm = 1e99;
@@ -41,10 +40,10 @@ function [p_ad, sW_ad,nit] =  ...
   while (resNorm > tol) && (nit < maxits) && (old_res >= resNorm)
       old_res = resNorm;
      
-      [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,g,p0,sW0);
+      [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,p0,sW0);
 
       if(isempty(varargin) || isempty(varargin{1}))% || nit > 0)
-        [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil);
+          [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil);
       
       else
           boundaryCondition = varargin{1};
@@ -53,10 +52,10 @@ function [p_ad, sW_ad,nit] =  ...
           water_val = water(model.well.prodIndex).val;
           oil_val = oil(model.well.prodIndex).val;
           
-          water(model.well.prodIndex) = water(model.well.prodIndex) - water(model.well.prodIndex) ...
+          water(model.well.prodIndex) = water(model.well.prodIndex) ... %- water(model.well.prodIndex) ...
               + p_ad(model.well.prodIndex) - p_ad(model.well.prodIndex).val - water_val;
       
-          oil(model.well.prodIndex) = oil(model.well.prodIndex) - oil(model.well.prodIndex) ...
+          oil(model.well.prodIndex) = oil(model.well.prodIndex) ...% - oil(model.well.prodIndex) ...
               + sW_ad(model.well.prodIndex)- sW_ad(model.well.prodIndex).val - oil_val;    
       end
      

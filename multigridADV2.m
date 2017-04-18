@@ -4,7 +4,7 @@ close all;
 
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 16,  16, 2);
+[nx,ny,nz] = deal( 10,  10, 2);
 [Dx,Dy,Dz] = deal(200, 200, 50);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
@@ -36,16 +36,15 @@ model = initiateModel(grid);
 % spy(model.operator.C)
 
 %% Impose vertical equilibrium
-gravity reset on, g = norm(gravity);
-[z_0, z_max] = deal(0, max(model.G.cells.centroids(:,3)));
-equil  = ode23(@(z,p) g .* model.oil.rhoO(p), [z_0, z_max], model.rock.p_r);
-p_init = reshape(deval(equil, model.G.cells.centroids(:,3)), [], 1);  clear equil
-sW_init = zeros(model.G.cells.num, 1);
+[z_0, z_max] = deal(0, max(model.grid.cells.centroids(:,3)));
+equil  = ode23(@(z,p) model.g .* model.oil.rhoO(p), [z_0, z_max], model.rock.p_r);
+p_init = reshape(deval(equil, model.grid.cells.centroids(:,3)), [], 1);  clear equil
+sW_init = zeros(model.grid.cells.num, 1);
 
 %% Initialize for solution loop
 [p_ad, sW_ad] = initVariablesADI(p_init, sW_init);
 
-numSteps = 100;                  % number of time-steps
+numSteps = 100;                 % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
 tol      = 1e-5;                % Newton tolerance
@@ -60,10 +59,10 @@ v1_iter = 1;
 v2_iter = 3;
 
 % Number of levels
-if(model.G.cartDims(3)>1)
-  k_level = floor(log(model.G.cells.num) /log(2^3));
+if(model.grid.cartDims(3)>1)
+  k_level = floor(log(model.grid.cells.num) /log(2^3));
 else
-  k_level = floor(log(model.G.cells.num) /log(2^2));
+  k_level = floor(log(model.grid.cells.num) /log(2^2));
 end
 cycle_index = 1;
 
@@ -87,14 +86,14 @@ while t < totTime
   
 %   [p_ad, sW_ad,nit] = multigridCycleV3(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt);
    
-  [p_ad, sW_ad,nit] = multigridCycleV4(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt,k_level,cycle_index);
+  [p_ad, sW_ad,nit] = multigridCycleV4(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,dt,k_level,cycle_index);
    
 %   if mod(step,10) == 0
 %     figure
-%     subplot(2, 1, 1); plot(model.G.cells.indexMap,p_ad.val);
+%     subplot(2, 1, 1); plot(model.grid.cells.indexMap,p_ad.val);
 %     title('Pressure')
 %     
-%     subplot(2, 1, 2); plot(model.G.cells.indexMap,sW_ad.val);
+%     subplot(2, 1, 2); plot(model.grid.cells.indexMap,sW_ad.val);
 %     title('Saturation')
 %     drawnow
 %    end
