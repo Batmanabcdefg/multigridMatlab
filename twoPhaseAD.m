@@ -1,6 +1,6 @@
 close all;
 %% Set up model geometry
-[nx,ny,nz] = deal( 16,  16, 2);
+[nx,ny,nz] = deal( 10,  10, 2);
 [Dx,Dy,Dz] = deal(200, 200, 50);
 G = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 G = computeGeometry(G);
@@ -77,10 +77,10 @@ nc = G.cells.num;
 pIx = 1:nc;
 sIx = (nc+1):(2*nc);
 
-numSteps = 100;                  % number of time-steps
+numSteps = 100;                 % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
-tol      = 1e-4;                % Newton tolerance
+tol      = 1e-5;                % Newton tolerance
 maxits   = 15;                  % max number of Newton its
 
 injIndex = 1;

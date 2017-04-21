@@ -32,9 +32,11 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
   
   if(size(partition,1) < model.grid.cells.num)
       diff = model.grid.cells.num - size(partition,1);
-      partition = cat(model.grid.cells.num - size(partition,1),partition,partition(end-diff,end));
+      partition = cat(1,partition,partition(end-diff+1:end,end));
   end
-  %partition(2:end) = partition(2:end) +1;
+  if(partition(2) == 1 )
+    partition(2:end) = partition(2:end) +1;
+  end
   partition(model.well.prodIndex) = partition(model.well.prodIndex) + 1;
 %   partition(model.grid.cells.num) = partition(model.grid.cells.num) + 1;
   

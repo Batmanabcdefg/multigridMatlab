@@ -41,7 +41,8 @@ function [p_ad, sW_ad,nit] =  ...
       old_res = resNorm;
      
       [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,p0,sW0);
-
+        
+      % Check wether a defect have been passed or not.
       if(isempty(varargin) || isempty(varargin{1}))% || nit > 0)
           [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil);
       

@@ -4,7 +4,7 @@ close all;
 
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 10,  10, 2);
+[nx,ny,nz] = deal( 16,  16, 2);
 [Dx,Dy,Dz] = deal(200, 200, 50);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
@@ -48,9 +48,17 @@ numSteps = 100;                 % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
 tol      = 1e-5;                % Newton tolerance
-maxits   = 15;                  % max number of Newton its
+maxits   = 20;                  % max number of Newton its
 
-% Multigrid variables
+
+model.well.inRate = 1*sum(model.rock.pv(p_init))/totTime;
+model.well.outRate = 0.5*model.well.inRate;
+
+sol = repmat(struct('time',[],'pressure',[], 's', []),[numSteps+1,1]);
+sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
+    's', double(sW_ad));
+
+%% Initiate multigrid variables
 
 % Presmoothing steps
 v1_iter = 1;
@@ -59,19 +67,23 @@ v1_iter = 1;
 v2_iter = 3;
 
 % Number of levels
+
 if(model.grid.cartDims(3)>1)
   k_level = floor(log(model.grid.cells.num) /log(2^3));
 else
   k_level = floor(log(model.grid.cells.num) /log(2^2));
 end
-cycle_index = 1;
 
-model.well.inRate = 1*sum(model.rock.pv(p_init))/totTime;
-model.well.outRate = 0.5*model.well.inRate;
+%Set to 1 in order to run with F-cycle
+F_cycle = 0;
 
-sol = repmat(struct('time',[],'pressure',[], 's', []),[numSteps+1,1]);
-sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
-    's', double(sW_ad));
+if(k_level < 3 || F_cycle == 0)
+    % V -cycle
+    cycle_index = 1;
+else
+    % F - cycle
+    cycle_index = 2:k_level-1;
+end
 
 %% Main loop
 t = 0; step = 0;
