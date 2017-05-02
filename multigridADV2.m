@@ -64,7 +64,7 @@ sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
 v1_iter = 1;
 
 % Postsmoothing steps
-v2_iter = 3;
+v2_iter = 5;
 
 % Number of levels
 
@@ -75,7 +75,7 @@ else
 end
 
 %Set to 1 in order to run with F-cycle
-F_cycle = 0;
+F_cycle = 1;
 
 if(k_level < 3 || F_cycle == 0)
     % V -cycle

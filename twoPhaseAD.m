@@ -1,6 +1,6 @@
 close all;
 %% Set up model geometry
-[nx,ny,nz] = deal( 10,  10, 2);
+[nx,ny,nz] = deal( 16,  16, 2);
 [Dx,Dy,Dz] = deal(200, 200, 50);
 G = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 G = computeGeometry(G);
@@ -19,6 +19,10 @@ p = linspace(100*barsa,220*barsa,50)';
 s = linspace(0,1,50)';
 plot(p/barsa, pv_r(1).*exp(cr*(p-p_r)),'LineWidth',2);
 
+% Attept at testing with Corey-type relative permeability
+Srw = 0;
+Srn = 0;
+Se = @(Sw) (Sw - Srw)/(1 - Srw - Srn);
 
 %% Define model for two-phase compressible fluid
 % Define a water phase
@@ -27,15 +31,15 @@ cw     = 1e-5/barsa;
 rho_rw = 960*kilogram/meter^3;
 rhoWS  = 1000*kilogram/meter^3;
 rhoW   = @(p) rho_rw .* exp( cw * (p - p_r) );
-krW = @(S) S.^2;
+krW = @(S) Se(S).^2;%S.^2;
 
 % Define a lighter, more viscous oil phase with different relative
 % permeability function
 muO   = 5*centi*poise;
-co      = 1e-2/barsa;
-rho_ro = 850*kilogram/meter^3;
-rhoOS  = 750*kilogram/meter^3;
-krO = @(S) S.^3;
+co      = 1e-3/barsa;
+rho_ro = 1250*kilogram/meter^3;
+rhoOS  = 650*kilogram/meter^3;
+krO = @(S) (Se(S)).^3;%S.^3;
 
 rhoO   = @(p) rho_ro .* exp( co * (p - p_r) );
 figure;
@@ -137,23 +141,47 @@ while t < totTime
       % Set production cells to fixed pressure of 200 bar and zero water
       water(prodIndex) = sW_ad(prodIndex);
       oil(prodIndex) = p_ad(prodIndex) - 200*barsa;
-%    oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex);% - sW_ad(prodIndex).val - q_t*(mobO(prodIndex).val/mob_total);
-% 
-%         q_w = (2*pi*rW(prodIndex)*rock.perm(prodIndex)*mobW(prodIndex)*G.cells.centroids(prodIndex,3)) ...
-%             *(200*barsa - p_ad(prodIndex).val);
-%         q_o = (2*pi*rO(prodIndex)*rock.perm(prodIndex)*mobO(prodIndex)*G.cells.centroids(prodIndex,3)) ...
-%             *(200*barsa - p_ad(prodIndex).val);
-%         
-%     water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - p_ad(prodIndex).val ...
-%         + q_w.val;
-%     oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex)- sW_ad(prodIndex).val ...
-%         + q_o.val;
-% 
-      
-%       water(prodIndex) = water(prodIndex) - q_w;
-%       oil(prodIndex) =  oil(prodIndex) - q_o;
+
+% %% Set injection well boundary conditions
+%   % Insert volumetric source term multiplied by density
+%   water(injIndex) = water(injIndex) - inRate.*rhoWS;
+%   
+%   %% Set production well boundary conditions
+%   
+%   q_w = (rW(prodIndex)*rock.perm(prodIndex)*mobW(prodIndex)*G.cells.centroids(prodIndex,3)) ...
+%     *(p_ad(prodIndex).val - 200*barsa);
+%   q_o = (rO(prodIndex)*rock.perm(prodIndex)*mobO(prodIndex)*G.cells.centroids(prodIndex,3)) ...
+%     ;%*(200*barsa - p_ad(prodIndex).val);
+% %   q_w = (p_ad(prodIndex).val - 200*barsa);
+% %   q_o = (p_ad(prodIndex).val - 200*barsa);
+%   
+%   % The ADI jacobi variables are also set to the production cells
+%   water(prodIndex) = water(prodIndex) - water(prodIndex) ...
+%       + p_ad(prodIndex) - p_ad(prodIndex).val - q_w;
+%   oil(prodIndex) = oil(prodIndex) - oil(prodIndex) ...
+%       + sW_ad(prodIndex)- sW_ad(prodIndex).val - q_o;
+%  
+
+
+%%
+
+
+% % 
+% %         q_w = (2*pi*rW(prodIndex)*rock.perm(prodIndex)*mobW(prodIndex)*G.cells.centroids(prodIndex,3)) ...
+% %             *(200*barsa - p_ad(prodIndex).val);
+% %         q_o = (2*pi*rO(prodIndex)*rock.perm(prodIndex)*mobO(prodIndex)*G.cells.centroids(prodIndex,3)) ...
+% %             *(200*barsa - p_ad(prodIndex).val);
+% %         
+% %     water(prodIndex) = water(prodIndex) - water(prodIndex) + p_ad(prodIndex) - p_ad(prodIndex).val ...
+% %         + q_w.val;
+% %     oil(prodIndex) = oil(prodIndex) - oil(prodIndex) + sW_ad(prodIndex)- sW_ad(prodIndex).val ...
+% %         + q_o.val;
+% % 
 %       
-      % Collect all equations
+% %       water(prodIndex) = water(prodIndex) - q_w;
+% %       oil(prodIndex) =  oil(prodIndex) - q_o;
+% %        
+    % Collect all equations
       eqs = {oil, water};
       % Concatenate equations and solve for update:
       eq  = cat(eqs{:});

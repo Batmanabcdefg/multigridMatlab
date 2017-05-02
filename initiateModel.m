@@ -66,7 +66,7 @@ function [model] = initiateModel(grid,varargin)
   %% Define model for two-phase compressible fluid
   % Define a water phase
   muW    = 1*centi*poise;
-  cw     = 1e-5/barsa;
+  cw     = 1e-6/barsa;
   rho_rw = 960*kilogram/meter^3;
   rhoWS  = 1000*kilogram/meter^3;
   rhoW   = @(p) rho_rw .* exp( cw * (p - p_r) );
@@ -79,9 +79,9 @@ function [model] = initiateModel(grid,varargin)
   muO   = 5*centi*poise;
   % Compressibility range: {slighly: 10^-5 to 10^-6, compressible: 10^-3 to
   % 10^-4}psi^-1
-  co      = 1e-3/barsa;
-  rho_ro = 850*kilogram/meter^3;
-  rhoOS  = 750*kilogram/meter^3;
+  co      = 1e-3/barsa; %1e-4
+  rho_ro = 1050*kilogram/meter^3; % 850
+  rhoOS  = 750*kilogram/meter^3; % 750
   krO = @(S) S.^3;
 
   rhoO   = @(p) rho_ro .* exp( co * (p - p_r) );

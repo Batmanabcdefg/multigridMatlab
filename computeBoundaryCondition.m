@@ -8,14 +8,19 @@ function [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil,vara
 % %       scale = norm(model.G.cartDims)/norm(model.G.parent.cartDims); 
 % %       sign = scale;
 %   end
+
+% %% Simple border condition
+%      water(model.well.injIndex) = water(model.well.injIndex) - model.well.inRate.*model.water.rhoWS;
+%       % Set production cells to fixed pressure of 200 bar and zero water
+%       water(model.well.prodIndex) = sW_ad(model.well.prodIndex);
+%       oil(model.well.prodIndex) = p_ad(model.well.prodIndex) - 200*barsa;
+
  %% Set injection well boundary conditions
   % Insert volumetric source term multiplied by density
   water(model.well.injIndex) = water(model.well.injIndex) - sign*model.well.inRate.*model.water.rhoWS;
-  %% Set production well boundary conditions 
-  % set wellcells to fixed buttom hole pressure at 200 bar and
-  % calculate outflow
-      
-% %% Set production well boundary conditions
+  
+  %% Set production well boundary conditions
+  
   rW = model.water.rhoW(p_ad);
   rO = model.oil.rhoO(p_ad);
 % dp = model.operator.grad(p_ad);
@@ -31,6 +36,6 @@ function [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil,vara
   water(model.well.prodIndex) = water(model.well.prodIndex) - water(model.well.prodIndex) ...
       + p_ad(model.well.prodIndex) - p_ad(model.well.prodIndex).val - sign*q_w.val;
   oil(model.well.prodIndex) = oil(model.well.prodIndex) - oil(model.well.prodIndex) ...
-      + sW_ad(model.well.prodIndex)- sW_ad(model.well.prodIndex).val - sign*q_o.val;
+      + sW_ad(model.well.prodIndex)- sW_ad(model.well.prodIndex).val;% - sign*q_o.val;
       
 end
