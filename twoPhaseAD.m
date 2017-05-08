@@ -1,7 +1,7 @@
 close all;
 %% Set up model geometry
-[nx,ny,nz] = deal( 16,  16, 2);
-[Dx,Dy,Dz] = deal(200, 200, 50);
+[nx,ny,nz] = deal( 24,  24, 2);
+[Dx,Dy,Dz] = deal(500, 500, 50);
 G = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 G = computeGeometry(G);
 
@@ -37,8 +37,8 @@ krW = @(S) Se(S).^2;%S.^2;
 % permeability function
 muO   = 5*centi*poise;
 co      = 1e-3/barsa;
-rho_ro = 1250*kilogram/meter^3;
-rhoOS  = 650*kilogram/meter^3;
+rho_ro = 1050*kilogram/meter^3;
+rhoOS  = 750*kilogram/meter^3;
 krO = @(S) (Se(S)).^3;%S.^3;
 
 rhoO   = @(p) rho_ro .* exp( co * (p - p_r) );
@@ -85,7 +85,7 @@ numSteps = 100;                 % number of time-steps
 totTime  = 365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
 tol      = 1e-5;                % Newton tolerance
-maxits   = 15;                  % max number of Newton its
+maxits   = 20;                  % max number of Newton its
 
 injIndex = 1;
 prodIndex = G.cells.num;

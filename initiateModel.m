@@ -66,7 +66,7 @@ function [model] = initiateModel(grid,varargin)
   %% Define model for two-phase compressible fluid
   % Define a water phase
   muW    = 1*centi*poise;
-  cw     = 1e-6/barsa;
+  cw     = 1e-5/barsa;
   rho_rw = 960*kilogram/meter^3;
   rhoWS  = 1000*kilogram/meter^3;
   rhoW   = @(p) rho_rw .* exp( cw * (p - p_r) );
