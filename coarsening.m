@@ -38,22 +38,21 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
     partition(2:end) = partition(2:end) +1;
   end
   partition(model.well.prodIndex) = partition(model.well.prodIndex) + 1;
-%   partition(model.grid.cells.num) = partition(model.grid.cells.num) + 1;
   
   coarse_grid = generateCoarseGrid(model.grid, partition);
   coarse_grid = coarsenGeometry(coarse_grid);
   
-  % Define coarse rock
-  %rock_coarse = makeRock(CG, 30*milli*darcy, 0.3);
+  % Add fields to the coarse grid to ensure that it passes as a
+  % regular grid for our purposes.
+  coarse_grid.cartDims = coarse_dims;
   
   weighting = accumarray(partition,1);
   
-  coarse_model = initiateModel(coarse_grid, model,weighting);
-
-  % Add fields to the coarse grid to ensure that it passes as a
-  % regular grid for our purposes.
-  coarse_model.grid.cartDims = coarse_dims;
-  
+   model.grid = coarse_grid;
+   mode = 'coarseModel';
+   coarseModel = struct('mode', mode,'model',model,'weighting',weighting);
+   coarse_model = initiateModel(coarseModel);
+   
   %% Restrict AD variables and defect
   
   

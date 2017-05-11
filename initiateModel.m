@@ -1,11 +1,31 @@
-function [model] = initiateModel(grid,varargin)
+function [model] = initiateModel(initMode)
   %% Function description
   %
   % PARAMETERS:
   % G        - initialized grid structure
-  % rock     - initialized rock structure
-  % # Not currently used: varargin - {1} coarse/true Contains a true statement if model is to be
-  %             initialized for a coarsed grid: Do not compute transmissibilities
+  % initMode - struct('mode', mode, 'model',model);
+  %             mode = 'newModel': Initializes a new model with parameters from the
+  %              -> model = struct(    'grid',grid 
+  %                                    'muW',muW,
+  %                                    'cw',cw,
+  %                                    'rho_rw',rho_rw,
+  %                                    'rhoWS',rhoWS 
+  %                                    'muO', muO,
+  %                                    'co',co,
+  %                                    'rho_ro',rho_ro,
+  %                                    'rhoOS', rhoOS,
+  %                                    'cr',cr,
+  %                                    'p_r',p_r,
+  %                                    'poro',poro, 
+  %                                    'perm', perm,
+  %                                    'homogeneous',['true' or 'false'], 
+  %                                    'permRange',permRange 
+  %                                    'gaussFilterSize',gaussFilterSize,
+  %                                    'std',std)
+  %             mode = 'coarseModel': Reinitalization of the model
+  %              -> initModel = struct( 'oldModel',oldModel, : model struct given from initial call to this
+  %                                         function
+  %                                      'weighting', weighting
   %
   % RETURNS:
   % p_ad_coarse - Coarsed version of the pressure eqs. with reinitialized
@@ -24,9 +44,20 @@ function [model] = initiateModel(grid,varargin)
   % SEE ALSO:
   %
 
+  
+  model = 0;
+  if(strcmp(initMode.mode,'newModel'))
+      model = initNewModel(initMode.model);
+  else
+      model = initCoarseModel(initMode.model,initMode.weighting);
+  end
+  
+end
+
+function [model] = initNewModel(model)
   %% Define wells
   injIndex = 1;
-  prodIndex = grid.cells.num;
+  prodIndex = model.grid.cells.num;
 
   inRate = 1;
   outRate = 0.5;
@@ -34,54 +65,47 @@ function [model] = initiateModel(grid,varargin)
   well = struct('injIndex',injIndex, 'prodIndex',prodIndex, 'inRate', inRate, 'outRate', outRate);
   
   %% Rock model
-  % Call to makeRock(grid, permeability, porosity) to initiate rock model
-  % permeability range: {poor: 1-15, moderate: 15-20, good: 50-250, very
-  % good: 250-1000
-  % porosity range: {fair: 0.25, very low: 0.1}
-  rock = makeRock(grid, 30*milli*darcy, 0.25);
-  % Compressibility: normally in the range of 10^-6 to 10^-7, assumed to be
-  % constant
-  cr   = 1e-6/barsa;
+  rock = 0;
+  
+  if(strcmp(model.homogeneous, 'true'))
+    rock = makeRock(model.grid, model.perm, model.poro);
+
+  else
+        p = gaussianField(model.grid.cartDims, model.perm_range, model.gauss_filter_size, model.std);
+        K = p.^3. * (1e-5)^2./(0.81 * 72 * (1-p).^2);
+        rock = makeRock(model.grid, K(:), p (:));
+        figure;
+        plotCellData (model.grid , convertTo ( rock.perm , milli * darcy ));
+        colorbar (); axis equal tight ; view (3);
+  end
+  
+  % Compressibility
+  cr   = model.cr;
   % Reference pressure
-  p_r  = 200*barsa;
-  pv_r = poreVolume(grid, rock);
+  p_r  = model.p_r;
+  pv_r = poreVolume(model.grid, rock);
   pv   = @(p) pv_r .* exp( cr * (p - p_r) );
 
-  if(strcmp(grid.type{1},'generateCoarseGrid'))
-      old_model = varargin{1};
-      %pv_r = accumarray(partition,old_model.rock.pv_r);
-      
-      rock.perm(injIndex) = old_model.rock.perm(old_model.well.injIndex);
-      rock.perm(prodIndex) = old_model.rock.perm(old_model.well.prodIndex);
-      
-      rock.poro(injIndex) = old_model.rock.poro(old_model.well.injIndex);
-      rock.poro(prodIndex) = old_model.rock.poro(old_model.well.prodIndex);
-          pv_r(injIndex) = old_model.rock.pv_r(old_model.well.injIndex);
-      pv_r(prodIndex) = old_model.rock.pv_r(old_model.well.prodIndex);
-  end
-  %rock struct
+  
+  % redefine rock struct
   rock = struct('perm',rock.perm,'poro',rock.poro, ...
       'cr', cr, 'p_r',p_r, 'pv_r', pv_r, 'pv',pv);
-  
   %% Define model for two-phase compressible fluid
   % Define a water phase
-  muW    = 1*centi*poise;
-  cw     = 1e-5/barsa;
-  rho_rw = 960*kilogram/meter^3;
-  rhoWS  = 1000*kilogram/meter^3;
+  muW    = model.muW;
+  cw     = model.cw;
+  rho_rw = model.rho_rw;
+  rhoWS  = model.rhoWS;
   rhoW   = @(p) rho_rw .* exp( cw * (p - p_r) );
   krW = @(S) S.^2;
   
   water = struct('muW', muW, 'cw', cw, 'rho_rw', rho_rw, 'rhoWS', rhoWS, 'rhoW', rhoW, 'krW', krW);
     
-  % Define a lighter, more viscous oil phase with different relative
-  % permeability function
-  muO   = 5*centi*poise;
-  % Compressibility range: {slighly: 10^-5 to 10^-6, compressible: 10^-3 to
-  % 10^-4}psi^-1
-  co      = 1e-3/barsa; %1e-4
-  rho_ro = 1050*kilogram/meter^3; % 850
-  rhoOS  = 750*kilogram/meter^3; % 750
+  % Define oil phase
+  muO   = model.muO;
+  co      = model.co; 
+  rho_ro = model.rho_ro; 
+  rhoOS  = model.rhoOS; 
   krO = @(S) S.^3;
 
   rhoO   = @(p) rho_ro .* exp( co * (p - p_r) );
@@ -90,30 +114,30 @@ function [model] = initiateModel(grid,varargin)
   
   
   %% Compute transmissibilities
-  N  = double(grid.faces.neighbors);
+  N  = double(model.grid.faces.neighbors);
   intInx = all(N ~= 0, 2);
   N  = N(intInx, :);                          % Interior neighbors
-  hT = computeTrans(grid, rock);                 % Half-transmissibilities
-  cf = grid.cells.faces(:,1);
-  nf = grid.faces.num;
+  hT = computeTrans(model.grid, rock);                 % Half-transmissibilities
+  cf = model.grid.cells.faces(:,1);
+  nf = model.grid.faces.num;
   T  = 1 ./ accumarray(cf, 1 ./ hT, [nf, 1]); % Harmonic average
   T  = T(intInx);                             % Restricted to interior
   
   %% Define discrete operators
   n = size(N,1);
-  C = sparse( [(1:n)'; (1:n)'], N, ones(n,1)*[-1 1], n, grid.cells.num);
+  C = sparse( [(1:n)'; (1:n)'], N, ones(n,1)*[-1 1], n, model.grid.cells.num);
   grad = @(x)C*x; % Discrete gradient
   div  = @(x)-C'*x; % Discrete divergence
   avg  = @(x) 0.5 * (x(N(:,1)) + x(N(:,2))); % Averaging
   upw = @(flag, x) flag.*x(N(:, 1)) + ~flag.*x(N(:, 2)); % Upwinding 
 
-  gradz  = grad(grid.cells.centroids(:,3));
+  gradz  = grad(model.grid.cells.centroids(:,3));
 
   operator = struct('grad', grad, 'div', div, 'avg', avg, 'upw', upw, 'gradz', gradz, 'C',C);
   
   %% Remaining variables
   %Note: Write a better description
-  nc = grid.cells.num;
+  nc = model.grid.cells.num;
   pIx = 1:nc;
   sIx = (nc+1):(2*nc);
   p_ad = 0;
@@ -122,7 +146,62 @@ function [model] = initiateModel(grid,varargin)
   
   
   %% Place all model parts and help function i a "modelstruct"
-  model = struct('grid',grid,'rock', rock, 'water', water, 'oil',oil, 'T', T, ...
+  model = struct('grid',model.grid,'rock', rock, 'water', water, 'oil',oil, 'T', T, ...
       'operator', operator, 'well', well, 'pIx', pIx,'sIx',sIx,'p_ad',p_ad,'sW_ad',sW_ad,'g',g);
+
+  
+end
+
+function [coarseModel] = initCoarseModel(coarseModel,weighting)
+    %% Coarsen rock
+    
+    coarseModel.well.prodIndex = coarseModel.grid.cells.num;
+    coarseModel.rock.perm = accumarray(coarseModel.grid.partition,coarseModel.rock.perm)./weighting;
+    coarseModel.rock.poro = accumarray(coarseModel.grid.partition,coarseModel.rock.poro)./weighting;
+    
+        
+    %Set the rock at the uncorarsened wells
+    coarseModel.rock.perm(coarseModel.well.injIndex) = coarseModel.rock.perm(coarseModel.well.injIndex);
+    coarseModel.rock.perm(coarseModel.well.prodIndex) = coarseModel.rock.perm(coarseModel.well.prodIndex);
+      
+    coarseModel.rock.poro(coarseModel.well.injIndex) = coarseModel.rock.poro(coarseModel.well.injIndex);
+    coarseModel.rock.poro(coarseModel.well.prodIndex) = coarseModel.rock.poro(coarseModel.well.prodIndex);
+    coarseModel.rock.pv_r = poreVolume(coarseModel.grid, coarseModel.rock);
+    coarseModel.rock.pv_r(coarseModel.well.injIndex) = coarseModel.rock.pv_r(coarseModel.well.injIndex);    
+    coarseModel.rock.pv_r(coarseModel.well.prodIndex) = coarseModel.rock.pv_r(coarseModel.well.prodIndex);
+    coarseModel.rock.pv = @(p) coarseModel.rock.pv_r .* exp( coarseModel.rock.cr * (p - coarseModel.rock.p_r) );
+      
+    %% Recompute transmissibilities
+    N  = double(coarseModel.grid.faces.neighbors);
+    intInx = all(N ~= 0, 2);
+    N  = N(intInx, :);                          % Interior neighbors
+    hT = computeTrans(coarseModel.grid, coarseModel.rock);                 % Half-transmissibilities
+    cf = coarseModel.grid.cells.faces(:,1);
+    nf = coarseModel.grid.faces.num;
+    T  = 1 ./ accumarray(cf, 1 ./ hT, [nf, 1]); % Harmonic average
+    T  = T(intInx);                             % Restricted to interior
+ 
+    coarseModel.T = T;
+    
+    %% Redefine discrete operators
+    n = size(N,1);
+    C = sparse( [(1:n)'; (1:n)'], N, ones(n,1)*[-1 1], n, coarseModel.grid.cells.num);
+    grad = @(x)C*x; % Discrete gradient
+    div  = @(x)-C'*x; % Discrete divergence
+    avg  = @(x) 0.5 * (x(N(:,1)) + x(N(:,2))); % Averaging
+    upw = @(flag, x) flag.*x(N(:, 1)) + ~flag.*x(N(:, 2)); % Upwinding 
+
+    gradz  = grad(coarseModel.grid.cells.centroids(:,3));
+
+    operator = struct('grad', grad, 'div', div, 'avg', avg, 'upw', upw, 'gradz', gradz, 'C',C);
+    
+    coarseModel.operator = operator;
+    %% Remaining variables
+    nc = coarseModel.grid.cells.num;
+    pIx = 1:nc;
+    sIx = (nc+1):(2*nc);
+  
+    coarseModel.pIx = pIx;
+    coarseModel.sIx = sIx;
 
 end

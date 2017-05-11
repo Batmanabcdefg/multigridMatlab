@@ -70,7 +70,7 @@ function [p_approx, sW_approx,nit] ...
   else
     % Multigrid core: compute a approximation on the corse grid
     [coarse_approx_p,coarse_approx_sW] ...
-          = newtonTwoPhaseADV2(coarse_model,coarse_p_ad,coarse_sW_ad,tol,maxits,dt,coarse_p_ad_0, coarse_sW_ad_0,boundary_condition);
+          = newtonTwoPhaseAD(coarse_model,coarse_p_ad,coarse_sW_ad,tol,maxits,dt,coarse_p_ad_0, coarse_sW_ad_0,boundary_condition);
   end
   %% Compute correction
   corse_correction_p =  coarse_approx_p - coarse_p_ad.val;
