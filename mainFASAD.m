@@ -4,8 +4,8 @@ close all;
 
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 16,  16, 2);
-[Dx,Dy,Dz] = deal(200, 200, 50);
+[nx,ny,nz] = deal( 24,  24, 2);
+[Dx,Dy,Dz] = deal(500, 500, 50);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
 
@@ -17,7 +17,7 @@ plotGrid(grid); view(3); axis tight
   % permeability range: {poor: 1-15, moderate: 15-20, good: 50-250, very
   % good: 250-1000
   % porosity range: {fair: 0.25, very low: 0.1}
-  perm = 30*milli*darcy; 
+  perm = 10*milli*darcy; 
   poro = 0.25;
 
   perm_range = [0.1 0.4];
@@ -105,7 +105,7 @@ sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
 v1_iter = 1;
 
 % Postsmoothing steps
-v2_iter = 5;
+v2_iter = 4;
 
 % Number of levels
 
@@ -129,6 +129,7 @@ end
 %% Main loop
 t = 0; step = 0;
 hwb = waitbar(t,'Simulation ..');
+tic;
 while t < totTime
    t = t + dt;
    step = step + 1;
@@ -160,6 +161,7 @@ while t < totTime
       waitbar(t/totTime,hwb);
    end
 end
+toc;
 close(hwb);
 
 %% Plot pressure evolution

@@ -36,6 +36,13 @@ function [p_ad, sW_ad,nit] =  ...
    nit = 0;
    resNorm = 1e99;
    old_res = resNorm;
+   scaling = 0;
+   pMaxUpd =0;
+   sWMaxUpd = 0;
+    if(strcmp(model.grid.type,'generateCoarseGrid'))
+          vol = sum(model.grid.cells.volumes);%max(model.grid.cells.volumes);
+          scaling = dt/vol;
+    end
    
   while (resNorm > tol) && (nit < maxits) && (old_res >= resNorm)
       old_res = resNorm;
@@ -59,7 +66,12 @@ function [p_ad, sW_ad,nit] =  ...
           oil(model.well.prodIndex) = oil(model.well.prodIndex) ...% - oil(model.well.prodIndex) ...
               + sW_ad(model.well.prodIndex)- sW_ad(model.well.prodIndex).val - oil_val;    
       end
-     
+      
+      if(strcmp(model.grid.type,'generateCoarseGrid'))
+          water = water.*scaling;
+          oil = oil.*scaling;
+      end
+      
       % Collect all equations
       eqs = {oil, water};
       % Concatenate equations and solve for update:
@@ -68,8 +80,18 @@ function [p_ad, sW_ad,nit] =  ...
       res = eq.val;     % residual
       upd = -(J \ res); % Newton update
       % Update variables
-      p_ad.val  = p_ad.val  + upd(model.pIx);
-      sW_ad.val = sW_ad.val + upd(model.sIx);
+      pUpd = upd(model.pIx);
+      pUpdCheck = pUpd > p_ad.val*0.2; 
+      pUpd(pUpdCheck) = p_ad(pUpdCheck)*0.2;
+      pMaxUpd = pMaxUpd + sum(pUpdCheck);
+   
+      sWUpd = upd(model.sIx);
+      sWUpdCheck = sWUpd > 0.2;
+      sWUpd(sWUpdCheck) = 0.2;
+      sWMaxUpd = sWMaxUpd + sum(sWUpdCheck);  
+      
+      p_ad.val  = p_ad.val  + pUpd;% upd(model.pIx);
+      sW_ad.val = sW_ad.val + sWUpd;% upd(model.sIx);
       sW_ad.val = min(sW_ad.val, 1);
       sW_ad.val = max(sW_ad.val, 0);
 %     figure
@@ -80,6 +102,9 @@ function [p_ad, sW_ad,nit] =  ...
       nit     = nit + 1;
 %       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
   end
-   fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm)
+%     fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm)
+%    if(pMaxUpd > 0 || sWMaxUpd > 0)
+%    fprintf('  pMaxUpd: %d, sWMaxUpd: %d \n', pMaxUpd, sWMaxUpd);
+%    end
 %    fprintf('Iterantions: %3d\n', nit)
 end
