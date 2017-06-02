@@ -1,4 +1,4 @@
-function [p_approx, sW_approx,nit] ...
+function [p_approx, sW_approx,nit,resNorm] ...
     = FASCycle(v1,v2,model,p_ad_0,sW_ad_0,tol,maxits,dt,k_level,cycle_index, varargin)
   %% Function description
   %
@@ -84,7 +84,7 @@ function [p_approx, sW_approx,nit] ...
   sW_ad.val = sW_ad.val + fine_correction_sW;
   
   %% Postsmoothing
-   [p_approx,sW_approx,nit] = newtonTwoPhaseAD(model,p_ad,sW_ad,tol,v2,dt,p_ad_0,sW_ad_0);
+   [p_approx,sW_approx,nit,resNorm] = newtonTwoPhaseAD(model,p_ad,sW_ad,tol,v2,dt,p_ad_0,sW_ad_0);
   
 end
 

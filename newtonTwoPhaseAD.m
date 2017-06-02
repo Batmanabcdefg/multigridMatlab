@@ -1,4 +1,4 @@
-function [p_ad, sW_ad,nit] =  ...
+function [p_ad, sW_ad,nit,resNorm] =  ...
     newtonTwoPhaseAD(model,p_ad,sW_ad,tol,maxits,dt,p_ad_0,sW_ad_0,varargin)
    %% Function description
    %
@@ -102,6 +102,7 @@ function [p_ad, sW_ad,nit] =  ...
       nit     = nit + 1;
 %       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
   end
+  model.residual = resNorm;
 %     fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm)
 %    if(pMaxUpd > 0 || sWMaxUpd > 0)
 %    fprintf('  pMaxUpd: %d, sWMaxUpd: %d \n', pMaxUpd, sWMaxUpd);

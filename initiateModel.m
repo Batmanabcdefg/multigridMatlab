@@ -70,6 +70,8 @@ function [model] = initNewModel(model)
   if(strcmp(model.homogeneous, 'true'))
     rock = makeRock(model.grid, model.perm, model.poro);
 
+  elseif(strcmp(model.homogeneous, 'spe10'))
+      rock = struct('poro',model.poro,'perm', model.perm);
   else
         p = gaussianField(model.grid.cartDims, model.perm_range, model.gauss_filter_size, model.std);
         K = p.^3. * (1e-5)^2./(0.81 * 72 * (1-p).^2);
@@ -143,11 +145,12 @@ function [model] = initNewModel(model)
   p_ad = 0;
   sW_ad = 0;
   gravity reset on, g = norm(gravity);
-  
+  residual = 0;
   
   %% Place all model parts and help function i a "modelstruct"
   model = struct('grid',model.grid,'rock', rock, 'water', water, 'oil',oil, 'T', T, ...
-      'operator', operator, 'well', well, 'pIx', pIx,'sIx',sIx,'p_ad',p_ad,'sW_ad',sW_ad,'g',g);
+      'operator', operator, 'well', well, 'pIx', pIx,'sIx',sIx, ...
+      'p_ad',p_ad,'sW_ad',sW_ad,'g',g, 'residual', residual);
 
   
 end
