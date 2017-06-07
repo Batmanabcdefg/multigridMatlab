@@ -79,21 +79,45 @@ function [p_ad, sW_ad,nit,resNorm] =  ...
       J   = eq.jac{1};  % Jacobian
       res = eq.val;     % residual
       upd = -(J \ res); % Newton update
-      % Update variables
-      pUpd = upd(model.pIx);
-      pUpdCheck = pUpd > p_ad.val*0.2; 
-      pUpd(pUpdCheck) = p_ad(pUpdCheck)*0.2;
-      pMaxUpd = pMaxUpd + sum(pUpdCheck);
-   
-      sWUpd = upd(model.sIx);
-      sWUpdCheck = sWUpd > 0.2;
-      sWUpd(sWUpdCheck) = 0.2;
-      sWMaxUpd = sWMaxUpd + sum(sWUpdCheck);  
       
-      p_ad.val  = p_ad.val  + pUpd;% upd(model.pIx);
-      sW_ad.val = sW_ad.val + sWUpd;% upd(model.sIx);
+%       %% Update variables V1
+%       pUpd = upd(model.pIx);
+%       pUpdCheck = pUpd > p_ad.val*0.2; 
+%       pUpd(pUpdCheck) = p_ad(pUpdCheck)*0.2;
+%       pMaxUpd = pMaxUpd + sum(pUpdCheck);
+%    
+%       sWUpd = upd(model.sIx);
+%       sWUpdCheck = sWUpd > 0.2;
+%       sWUpd(sWUpdCheck) = 0.2;
+%       sWMaxUpd = sWMaxUpd + sum(sWUpdCheck);  
+%       
+%       p_ad.val  = p_ad.val  + pUpd;% upd(model.pIx);
+%       sW_ad.val = sW_ad.val + sWUpd;% upd(model.sIx);
+%       sW_ad.val = min(sW_ad.val, 1);
+%       sW_ad.val = max(sW_ad.val, 0);
+
+      %% Update variables V2
+      dp = upd(model.pIx);
+      ds = upd(model.sIx);
+      % Limit pressure to relative changes of 20%
+      maxRelCh = 0.2;
+      biggestChange = max(abs(dp./double(p_ad)), [], 2);
+      w = min(maxRelCh./biggestChange, 1);
+      % Multiply by relaxation factor
+      dp = dp.*min(w);
+      
+      % Limit saturation to relative changes of 20%
+      maxRelCh = 0.2;
+      biggestChange = max(abs(ds), [], 2);
+      w = min(maxRelCh./biggestChange, 1);
+      % Multiply by relaxation factor
+      ds = ds.*min(w);
+
+      p_ad.val   = p_ad.val   + dp;
+      sW_ad.val = sW_ad.val + ds;
       sW_ad.val = min(sW_ad.val, 1);
       sW_ad.val = max(sW_ad.val, 0);
+      
 %     figure
 %     plot(1:model.G.cells.num,sW_ad.val);
 %     title('Saturation')
@@ -103,7 +127,7 @@ function [p_ad, sW_ad,nit,resNorm] =  ...
 %       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
   end
   model.residual = resNorm;
-%     fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm)
+     fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm)
 %    if(pMaxUpd > 0 || sWMaxUpd > 0)
 %    fprintf('  pMaxUpd: %d, sWMaxUpd: %d \n', pMaxUpd, sWMaxUpd);
 %    end

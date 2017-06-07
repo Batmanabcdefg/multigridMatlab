@@ -86,10 +86,10 @@ sW_init = zeros(model.grid.cells.num, 1);
 [p_ad, sW_ad] = initVariablesADI(p_init, sW_init);
 
 numSteps = 100;                 % number of time-steps
-totTime  = 365*day;             % total simulation time
+totTime  = 10*365*day;             % total simulation time
 dt       = totTime / numSteps;  % constant time step
 tol      = 1e-5;                % Newton tolerance
-maxits   = 20;                  % max number of Newton its
+maxits   = 100;                  % max number of Newton its
 
 
 model.well.inRate = 1*sum(model.rock.pv(p_init))/totTime;
@@ -102,13 +102,12 @@ sol(1)  = struct('time', 0, 'pressure', double(p_ad), ...
 %% Initiate multigrid variables
 
 % Presmoothing steps
-v1_iter = 1;
+v1_iter = 100;
 
 % Postsmoothing steps
-v2_iter = 4;
+v2_iter = 100;
 
 % Number of levels
-
 if(model.grid.cartDims(3)>1)
   k_level = floor(log(model.grid.cells.num) /log(2^3));
 else
@@ -137,20 +136,12 @@ while t < totTime
       step, convertTo(t - dt, day), convertTo(t, day));
 
   % Multigrid
-  
-%   [p_ad, sW_ad,nit] = multigridCycleV3(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,g,dt);
-   
   [p_ad, sW_ad,nit] = FASCycle(v1_iter,v2_iter,model,p_ad,sW_ad,tol,maxits,dt,k_level,cycle_index);
-   
-%   if mod(step,10) == 0
-%     figure
-%     subplot(2, 1, 1); plot(model.grid.cells.indexMap,p_ad.val);
-%     title('Pressure')
-%     
-%     subplot(2, 1, 2); plot(model.grid.cells.indexMap,sW_ad.val);
-%     title('Saturation')
-%     drawnow
-%    end
+%   if(nit < maxits) 
+%     v1_iter = 0;
+%   else
+%     v1_iter = 0;
+%   end
    
    if nit > maxits
       error('Newton solves did not converge')
@@ -165,36 +156,17 @@ toc;
 close(hwb);
 
 %% Plot pressure evolution
-
-for i = 1:numSteps
-    figure(1); clf
-    subplot(2, 1, 1)
-    plotCellData(grid, sol(i).pressure);
-    title('Pressure')
-    view(30, 40);
-    subplot(2, 1, 2)
-    plotCellData(grid, sol(i).s);
-    caxis([0, 1])
-    view(30, 40);
-    title('Watersaturation')
-    drawnow
-end
-
-%{
-Copyright 2009-2016 SINTEF ICT, Applied Mathematics.
-
-This file is part of The MATLAB Reservoir Simulation Toolbox (MRST).
-
-MRST is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-MRST is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with MRST.  If not, see <http://www.gnu.org/licenses/>.
-%}
+% 
+% for i = 1:numSteps
+%     figure(1); clf
+%     subplot(2, 1, 1)
+%     plotCellData(grid, sol(i).pressure);
+%     title('Pressure')
+%     view(30, 40);
+%     subplot(2, 1, 2)
+%     plotCellData(grid, sol(i).s);
+%     caxis([0, 1])
+%     view(30, 40);
+%     title('Watersaturation')
+%     drawnow
+% end
