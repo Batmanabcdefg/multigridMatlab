@@ -1,13 +1,11 @@
 function [p_approx, sW_approx,nit,resNorm] ...
-    = FASCycle(v1,v2,model,p_ad_0,sW_ad_0,tol,maxits,dt,k_level,cycle_index, varargin)
+    = FASCycle(model,p_ad_0,sW_ad_0,tol,maxits,dt, varargin)
   %% Function description
   %
   % PARAMETERS:
   % model    - System model structure with grid, rock, phases and operator
   %            substructs
   %
-  % v1_iter  - Number of presmoothing sweeps
-  % v2_iter  - Number of postsmoothing sweeps
   % p_ad     - ADI struct for the pressure
   % s_ad     - ADI struct for the saturation
   % tol      - error tolerance for newton at the most coarse grid
@@ -15,8 +13,6 @@ function [p_approx, sW_approx,nit,resNorm] ...
   %            coarsed grid
   % g        - gravity constant 
   % dt       - current time step
-  % k_level  - number of levels of coarsening yet to be performed
-  % cycle_index - number of subcycles
   % varargin - defect/boundary_condition from previous coarsening level
   %
   % RETURNS:
@@ -29,19 +25,19 @@ function [p_approx, sW_approx,nit,resNorm] ...
   % SEE ALSO:
   %
 
-  
   %% Presmoothing
   if(~isempty(varargin))
       % If varargin contains a cell, extract the struct from the first cell
       % position
      varargin = varargin{1}; 
   end
-  [p_ad,sW_ad] = newtonTwoPhaseAD(model,p_ad_0,sW_ad_0,tol,v1,dt,p_ad_0,sW_ad_0, varargin);
+%   fprintf('Leve1 %d, Presmooth:  \n',model.cycle.level);
+  [p_ad,sW_ad] = newtonTwoPhaseAD(model,p_ad_0,sW_ad_0,tol,model.cycle.v1,dt,p_ad_0,sW_ad_0, varargin);
    
   %% Find the defect
   [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,p_ad_0,sW_ad_0);
-  water.val = (-1)*water.val;
-  oil.val = (-1)*oil.val;
+  water.val = (1)*water.val;
+  oil.val = (1)*oil.val;
   [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil,true);
 %   water.val = -water.val;
 %   oil.val = -oil.val;
@@ -59,16 +55,30 @@ function [p_approx, sW_approx,nit,resNorm] ...
 
   boundary_condition = struct('water',rhs_water,'oil',rhs_oil);
   %% Multigrid cycle
-  if(k_level > 1)
-      [coarse_approx_p, coarse_approx_sW,nit] = FASCycle(v1,v2,coarse_model,coarse_p_ad,coarse_sW_ad,tol,maxits,dt,...
-          (k_level - 1),cycle_index,boundary_condition);
-      if(k_level == cycle_index(1))
-          cycle_index(1) = [];
-          [coarse_approx_p, coarse_approx_sW,nit] = FASCycle(v1,v2,coarse_model,coarse_approx_p,coarse_approx_sW,tol,maxits,dt,...
-          (k_level - 1),cycle_index,boundary_condition);
+  if(coarse_model.cycle.level > 1)
+%         fprintf('Leve1 %d, send FASCycle: \n',coarse_model.cycle.level);
+        coarse_model.cycle.level = coarse_model.cycle.level - 1;
+      
+        [coarse_approx_p, coarse_approx_sW,nit,resNorm] = FASCycle(coarse_model, ...
+          coarse_p_ad,coarse_sW_ad,tol,maxits,dt,boundary_condition);
+      
+      coarse_model.cycle.level = coarse_model.cycle.level + 1; 
+%       fprintf('Leve1 %d, return FASCycle: \n',coarse_model.cycle.level);
+      
+      if(~isempty(coarse_model.cycle.index) && coarse_model.cycle.level == coarse_model.cycle.index(1))
+          coarse_model.cycle.index(1) = []; %Pop current index
+%           fprintf('Leve1 %d, reSend FASCycle: \n',coarse_model.cycle.level);
+          coarse_model.cycle.level = coarse_model.cycle.level - 1; 
+          
+          [coarse_approx_p, coarse_approx_sW,nit,resNorm] = FASCycle(coarse_model, ...
+              coarse_approx_p,coarse_approx_sW,tol,maxits,dt, boundary_condition);
+          coarse_model.cycle.level = coarse_model.cycle.level + 1; 
+%           fprintf('Leve1 %d, reReturn FASCycle: \n',coarse_model.cycle.level);
+          
       end
   else
     % Multigrid core: compute a approximation on the corse grid
+%     fprintf('Level %d , Solve:     \n',coarse_model.cycle.level);
     [coarse_approx_p,coarse_approx_sW] ...
           = newtonTwoPhaseAD(coarse_model,coarse_p_ad,coarse_sW_ad,tol,maxits,dt,coarse_p_ad_0, coarse_sW_ad_0,boundary_condition);
   end
@@ -77,14 +87,15 @@ function [p_approx, sW_approx,nit,resNorm] ...
   corse_correction_sW = coarse_approx_sW - coarse_sW_ad.val;
   
   %% Interpolating soluton from coarsed grid and compute ccorrected approximation
-  [fine_correction_p, fine_correction_sW] = interpolate(coarse_model.grid,  ...
+  [model,fine_correction_p, fine_correction_sW] = interpolate(model,coarse_model,  ...
         corse_correction_p , corse_correction_sW);
   
   p_ad.val =   p_ad.val + fine_correction_p;
   sW_ad.val = sW_ad.val + fine_correction_sW;
   
   %% Postsmoothing
-   [p_approx,sW_approx,nit,resNorm] = newtonTwoPhaseAD(model,p_ad,sW_ad,tol,v2,dt,p_ad_0,sW_ad_0);
+%   fprintf('Level %d, Postsmooth: \n',model.cycle.level);
+   [p_approx,sW_approx,nit,resNorm] = newtonTwoPhaseAD(model,p_ad,sW_ad,tol,model.cycle.v2,dt,p_ad_0,sW_ad_0);
   
 end
 

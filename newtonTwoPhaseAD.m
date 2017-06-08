@@ -50,21 +50,23 @@ function [p_ad, sW_ad,nit,resNorm] =  ...
       [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,p0,sW0);
         
       % Check wether a defect have been passed or not.
-      if(isempty(varargin) || isempty(varargin{1}))% || nit > 0)
+      if(isempty(varargin) || isempty(varargin{1}))% || nit == 1)
           [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil);
       
       else
           boundaryCondition = varargin{1};
-          water = water + boundaryCondition.water;
-          oil = oil + boundaryCondition.oil;
-          water_val = water(model.well.prodIndex).val;
-          oil_val = oil(model.well.prodIndex).val;
+          water = water - boundaryCondition.water;
+          oil = oil - boundaryCondition.oil;
           
-          water(model.well.prodIndex) = water(model.well.prodIndex) ... %- water(model.well.prodIndex) ...
-              + p_ad(model.well.prodIndex) - p_ad(model.well.prodIndex).val - water_val;
-      
-          oil(model.well.prodIndex) = oil(model.well.prodIndex) ...% - oil(model.well.prodIndex) ...
-              + sW_ad(model.well.prodIndex)- sW_ad(model.well.prodIndex).val - oil_val;    
+%          
+%           water_val = water(model.well.prodIndex).val;
+%           oil_val = oil(model.well.prodIndex).val;
+%           
+%           water(model.well.prodIndex) = water(model.well.prodIndex) - water_val;% ... 
+%               - water(model.well.prodIndex) + p_ad(model.well.prodIndex) - p_ad(model.well.prodIndex).val ;
+%       
+%           oil(model.well.prodIndex) = oil(model.well.prodIndex) - oil_val;% ...
+%               - oil(model.well.prodIndex) + sW_ad(model.well.prodIndex)- sW_ad(model.well.prodIndex).val ;    
       end
       
       if(strcmp(model.grid.type,'generateCoarseGrid'))
@@ -126,8 +128,10 @@ function [p_ad, sW_ad,nit,resNorm] =  ...
       nit     = nit + 1;
 %       fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm);
   end
+  
   model.residual = resNorm;
-     fprintf('  Iteration %3d:  Res = %.4e\n', nit, resNorm)
+  %display(model.cycle.index);
+     fprintf('Grid %d, Iteration %3d:  Res = %.4e \n',model.grid.cartDims(1), nit, resNorm)
 %    if(pMaxUpd > 0 || sWMaxUpd > 0)
 %    fprintf('  pMaxUpd: %d, sWMaxUpd: %d \n', pMaxUpd, sWMaxUpd);
 %    end
