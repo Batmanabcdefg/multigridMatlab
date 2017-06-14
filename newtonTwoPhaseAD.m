@@ -1,5 +1,5 @@
 function [p_ad, sW_ad,nit,resNorm] =  ...
-    newtonTwoPhaseAD(model,p_ad,sW_ad,tol,maxits,dt,p_ad_0,sW_ad_0,varargin)
+    newtonTwoPhaseAD(model,p_ad,sW_ad,p_ad_0,sW_ad_0,tol,maxits,dt,varargin)
    %% Function description
    %
    % PARAMETERS:
@@ -47,17 +47,16 @@ function [p_ad, sW_ad,nit,resNorm] =  ...
   while (resNorm > tol) && (nit < maxits) && (old_res >= resNorm)
       old_res = resNorm;
      
-      [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,p0,sW0);
+      [water, oil] = computePhaseFlux(model,p_ad,sW_ad,p0,sW0,dt);
         
       % Check wether a defect have been passed or not.
       if(isempty(varargin) || isempty(varargin{1}))% || nit == 1)
-          [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil);
-      
+          [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil);      
       else
           boundaryCondition = varargin{1};
-          water = water - boundaryCondition.water;
-          oil = oil - boundaryCondition.oil;
-          
+          water =  boundaryCondition.water + water;
+          oil =   boundaryCondition.oil + oil;
+%           
 %          
 %           water_val = water(model.well.prodIndex).val;
 %           oil_val = oil(model.well.prodIndex).val;
@@ -115,7 +114,7 @@ function [p_ad, sW_ad,nit,resNorm] =  ...
       % Multiply by relaxation factor
       ds = ds.*min(w);
 
-      p_ad.val   = p_ad.val   + dp;
+      p_ad.val   = p_ad.val + dp;
       sW_ad.val = sW_ad.val + ds;
       sW_ad.val = min(sW_ad.val, 1);
       sW_ad.val = max(sW_ad.val, 0);
@@ -131,6 +130,9 @@ function [p_ad, sW_ad,nit,resNorm] =  ...
   
   model.residual = resNorm;
   %display(model.cycle.index);
+%   if(~isempty(varargin))
+%       fprintf('%s \n',varargin{2});
+%   end
      fprintf('Grid %d, Iteration %3d:  Res = %.4e \n',model.grid.cartDims(1), nit, resNorm)
 %    if(pMaxUpd > 0 || sWMaxUpd > 0)
 %    fprintf('  pMaxUpd: %d, sWMaxUpd: %d \n', pMaxUpd, sWMaxUpd);

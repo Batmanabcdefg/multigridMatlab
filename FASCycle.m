@@ -1,5 +1,5 @@
 function [p_approx, sW_approx,nit,resNorm] ...
-    = FASCycle(model,p_ad_0,sW_ad_0,tol,maxits,dt, varargin)
+    = FASCycle(model,p_ad, sW_ad,p_ad_0,sW_ad_0,tol,maxits,dt, varargin)
   %% Function description
   %
   % PARAMETERS:
@@ -32,12 +32,18 @@ function [p_approx, sW_approx,nit,resNorm] ...
      varargin = varargin{1}; 
   end
 %   fprintf('Leve1 %d, Presmooth:  \n',model.cycle.level);
-  [p_ad,sW_ad] = newtonTwoPhaseAD(model,p_ad_0,sW_ad_0,tol,model.cycle.v1,dt,p_ad_0,sW_ad_0, varargin);
-   
+  if(model.residual < tol)
+    v1 = model.cycle.v1;
+  else
+    v1 = (model.cycle.grids-model.cycle.level+1)^2;
+  end
+    [p_ad,sW_ad] = newtonTwoPhaseAD(model,p_ad,sW_ad,p_ad_0,sW_ad_0,tol,v1,dt, varargin);
+  
+      
   %% Find the defect
-  [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,p_ad_0,sW_ad_0);
-  water.val = (1)*water.val;
-  oil.val = (1)*oil.val;
+  [water, oil] = computePhaseFlux(model,p_ad,sW_ad,p_ad_0,sW_ad_0,dt);
+  water.val = (-1)*water.val;
+  oil.val = (-1)*oil.val;
   [water, oil] = computeBoundaryCondition(model,p_ad,sW_ad,water,oil,true);
 %   water.val = -water.val;
 %   oil.val = -oil.val;
@@ -48,7 +54,7 @@ function [p_approx, sW_approx,nit,resNorm] ...
     = coarsening(model, p_ad, sW_ad, p_ad_0, sW_ad_0, defect);
   
   %% Compute new right hand side
-  [coarse_water, coarse_oil] = computePhaseFlux(coarse_model,coarse_p_ad,coarse_sW_ad,dt,coarse_p_ad_0,coarse_sW_ad_0);
+  [coarse_water, coarse_oil] = computePhaseFlux(coarse_model,coarse_p_ad,coarse_sW_ad,coarse_p_ad_0,coarse_sW_ad_0,dt);
   
   rhs_water = coarse_defect.water.val + coarse_water;
   rhs_oil = coarse_defect.oil.val + coarse_oil;
@@ -60,7 +66,7 @@ function [p_approx, sW_approx,nit,resNorm] ...
         coarse_model.cycle.level = coarse_model.cycle.level - 1;
       
         [coarse_approx_p, coarse_approx_sW,nit,resNorm] = FASCycle(coarse_model, ...
-          coarse_p_ad,coarse_sW_ad,tol,maxits,dt,boundary_condition);
+          coarse_p_ad,coarse_sW_ad,coarse_p_ad_0, coarse_sW_ad_0,tol,maxits,dt,boundary_condition);
       
       coarse_model.cycle.level = coarse_model.cycle.level + 1; 
 %       fprintf('Leve1 %d, return FASCycle: \n',coarse_model.cycle.level);
@@ -71,7 +77,7 @@ function [p_approx, sW_approx,nit,resNorm] ...
           coarse_model.cycle.level = coarse_model.cycle.level - 1; 
           
           [coarse_approx_p, coarse_approx_sW,nit,resNorm] = FASCycle(coarse_model, ...
-              coarse_approx_p,coarse_approx_sW,tol,maxits,dt, boundary_condition);
+              coarse_approx_p,coarse_approx_sW,coarse_p_ad_0, coarse_sW_ad_0,tol,maxits,dt, boundary_condition);
           coarse_model.cycle.level = coarse_model.cycle.level + 1; 
 %           fprintf('Leve1 %d, reReturn FASCycle: \n',coarse_model.cycle.level);
           
@@ -79,8 +85,9 @@ function [p_approx, sW_approx,nit,resNorm] ...
   else
     % Multigrid core: compute a approximation on the corse grid
 %     fprintf('Level %d , Solve:     \n',coarse_model.cycle.level);
-    [coarse_approx_p,coarse_approx_sW] ...
-          = newtonTwoPhaseAD(coarse_model,coarse_p_ad,coarse_sW_ad,tol,maxits,dt,coarse_p_ad_0, coarse_sW_ad_0,boundary_condition);
+    [coarse_approx_p,coarse_approx_sW,nit,resNorm] ...
+          = newtonTwoPhaseAD(coarse_model,coarse_p_ad,coarse_sW_ad,coarse_p_ad_0, coarse_sW_ad_0,tol,maxits,dt,boundary_condition);
+    model.residual = resNorm;
   end
   %% Compute correction
   corse_correction_p =  coarse_approx_p - coarse_p_ad.val;
@@ -94,21 +101,8 @@ function [p_approx, sW_approx,nit,resNorm] ...
   sW_ad.val = sW_ad.val + fine_correction_sW;
   
   %% Postsmoothing
-%   fprintf('Level %d, Postsmooth: \n',model.cycle.level);
-   [p_approx,sW_approx,nit,resNorm] = newtonTwoPhaseAD(model,p_ad,sW_ad,tol,model.cycle.v2,dt,p_ad_0,sW_ad_0);
   
+%   fprintf('Level %d, Postsmooth: \n',model.cycle.level);
+   [p_approx,sW_approx,nit,resNorm] = newtonTwoPhaseAD(model,p_ad,sW_ad,p_ad_0,sW_ad_0,tol,model.cycle.v2*(model.cycle.grids-model.cycle.level+1),dt);
+   
 end
-
-
-%   figure
-%     subplot(4, 2, 1); plot(model.G.cells.indexMap,p_ad.val);
-%     title('Corrected Pressure')
-%     subplot(4, 2, 3); plot(1:coarse_model.G.cells.num,correction_p);
-%     title('Correction coarse Pressure')
-%     
-%     subplot(4, 2, 2); plot(model.G.cells.indexMap,sW_ad.val);
-%     title('Saturation')
-%     subplot(4, 2, 4); plot(1:coarse_model.G.cells.num,correction_sW);
-%     title('Correction coarse Saturation')
-%     drawnow   
-

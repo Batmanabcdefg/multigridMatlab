@@ -1,4 +1,4 @@
-function [water, oil] = computePhaseFlux(model,p_ad,sW_ad,dt,p0,sW0)
+function [water, oil] = computePhaseFlux(model,p_ad,sW_ad,p0,sW0,dt)
   % Evaluate properties
   rW = model.water.rhoW(p_ad);
   rW0 = model.water.rhoW(p0);

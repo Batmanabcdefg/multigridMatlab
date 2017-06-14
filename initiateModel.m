@@ -143,14 +143,15 @@ function [model] = initNewModel(model)
   p_ad = 0;
   sW_ad = 0;
   gravity reset on, g = norm(gravity);
-  residual = 0;
+  residual = 99e10;
   %% Multigrid cycle variables
   cycle = struct('v1', model.cycle.v1, 'v2',model.cycle.v2, ...
-      'type',model.cycle.type,'level',0,'index',1);
+      'type',model.cycle.type,'level',0,'index',1,'grids',1);
+  
   %% Place all model parts and help function i a "modelstruct"
   model = struct('grid',model.grid,'rock', rock, 'water', water, 'oil',oil, 'T', T, ...
       'operator', operator, 'well', well, 'pIx', pIx,'sIx',sIx, ...
-      'p_ad',p_ad,'sW_ad',sW_ad,'g',g, 'residual', residual, 'cycle', cycle);
+      'p_ad',p_ad,'sW_ad',sW_ad,'g',g, 'residual', residual, 'cycle', cycle,'nit',0);
 
   
 end

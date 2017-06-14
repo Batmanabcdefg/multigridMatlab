@@ -1,15 +1,15 @@
 mrstModule add coarsegrid;
 
-close all;
+% close all;
 
 %% Set up model
  % Set up model geometry
-[nx,ny,nz] = deal( 24,  24, 2);
+[nx,ny,nz] = deal( 64,  64, 8);
 [Dx,Dy,Dz] = deal(500, 500, 50);
 grid = cartGrid([nx, ny, nz], [Dx, Dy, Dz]);
 grid = computeGeometry(grid);
 
-%plotGrid(grid); view(3); axis tight
+% plotGrid(grid); view(3); axis tight
 
 % Set rock properties
   homogeneous = 'true';
@@ -38,7 +38,7 @@ grid = computeGeometry(grid);
   
   % Define a lighter, more viscous oil phase with different relative
   % permeability function
-  muO   = 5*centi*poise;
+  muO   = 1*centi*poise;
   % Compressibility range: {slighly: 10^-5 to 10^-6, compressible: 10^-3 to
   % 10^-4}psi^-1
   co      = 1e-3/barsa; %1e-4
@@ -50,37 +50,22 @@ grid = computeGeometry(grid);
   cycle_type = 'V_cycle';  % F_cycle or V_cycle
   cycle = struct('v1', v1_iter, 'v2',v2_iter,'type',cycle_type); 
   
-numSteps = 100;                 % number of time-steps
-totTime  = 10*365*day;             % total simulation time
-tol      = 1e-5;                % Newton tolerance
-maxits   = 100;                  % max number of Newton its
-
-constraints = struct('numSteps',numSteps,'totTime',totTime, 'tol',tol, 'maxits', maxits);
-  
 newModel = struct('grid',grid, 'muW',muW, 'cw',cw, 'rho_rw',rho_rw,  ...
                     'rhoWS',rhoWS, 'muO', muO, 'co',co, 'rho_ro',rho_ro, ...
                     'rhoOS', rhoOS, 'cr',cr,'p_r',p_r, 'poro',poro,'perm', perm, ...
                     'homogeneous',homogeneous, 'perm_range',perm_range, ... 
                     'gauss_filter_size',gauss_filter_size, 'std',std,'cycle',cycle);
 
-[runTime, res, nit, sol] = FASTwoPhaseAD(newModel,constraints);
-  
+numSteps = 100;                 % number of time-steps
+totTime  = 40*365*day;             % total simulation time
+tol      = 1e-5;                % Newton tolerance
+maxits   = 100;                  % max number of Newton its
 
-%% Plot pressure evolution
-% 
-% for i = 1:40
-%     figure(1); clf
-%     subplot(2, 1, 1)
-%     plotCellData(grid, sol(i).pressure);
-%     title('Pressure')
-%     view(30, 40);
-%     subplot(2, 1, 2)
-%     plotCellData(grid, sol(i).s);
-%     caxis([0, 1])
-%     view(30, 40);
-%     title('Watersaturation')
-%     drawnow
-% end
+constraints = struct('numSteps',numSteps,'totTime',totTime, 'tol',tol, 'maxits', maxits);
+  
+[runTime, res, nit, sol] = FASTwoPhaseAD(newModel,constraints);
+  disp = ([runTime, res, nit]);
+  
 
 fprintf('Runtime: %.2f, Residual: %.4e, Iterations: %d \n', runTime, res,nit);
 % p = linspace(100*barsa,220*barsa,50)';
@@ -104,17 +89,17 @@ fprintf('Runtime: %.2f, Residual: %.4e, Iterations: %d \n', runTime, res,nit);
 
 
 %% Plot pressure evolution
-% 
-% for i = 1:numSteps
-%     figure(1); clf
-%     subplot(2, 1, 1)
-%     plotCellData(grid, sol(i).pressure);
-%     title('Pressure')
-%     view(30, 40);
-%     subplot(2, 1, 2)
-%     plotCellData(grid, sol(i).s);
-%     caxis([0, 1])
-%     view(30, 40);
-%     title('Watersaturation')
-%     drawnow
-% end
+
+for i = 1:numSteps
+    figure(1); clf
+    subplot(2, 1, 1)
+    plotCellData(grid, sol(i).pressure);
+    title('Pressure')
+    view(30, 40);
+    subplot(2, 1, 2)
+    plotCellData(grid, sol(i).s);
+    caxis([0, 1])
+    view(30, 40);
+    title('Water saturation')
+    drawnow
+end

@@ -55,7 +55,6 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
    
   %% Restrict AD variables and defect
   
-  
   coarse_p_init = accumarray(partition, p_ad.val)./weighting;
   coarse_sW_init = accumarray(partition,sW_ad.val)./weighting;
   
@@ -81,5 +80,8 @@ function [coarse_model,p_ad_coarse, sW_ad_coarse, p_ad_0_coarse, sW_ad_0_coarse,
   
   coarse_model.well.inRate = model.well.inRate;
   coarse_model.well.outRate = model.well.outRate;
+
+%   plotCoarseGrid = struct('cells',coarse_model.grid.cells,'faces',coarse_model.grid.faces,'cartDims',coarse_model.grid.cartDims,'griddim',coarse_model.grid.griddim,'type',{'tensorGrid'  'cartGrid'  'computeGeometry'});
+%   plotGrid(plotCoarseGrid); view(3);
 
 end
